@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:app_forge/engine/engine.dart';
+import 'app/app_config.dart';
+import 'app/app_features.dart';
+import 'app/app_plugins.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeAppPlugins();
+
   runApp(const MainApp());
 }
 
@@ -9,11 +16,19 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
+    final initialFeature = findInitialFeature(
+      appFeatures,
+      appConfig.initialFeatureKey,
+    );
+
+    return MaterialApp(
+      title: appConfig.appTitle,
+      debugShowCheckedModeBanner: appConfig.showDebugBanner,
+      theme: appConfig.theme,
+      home: EnginePlaceholderShell(
+        title: appConfig.appTitle,
+        features: appFeatures,
+        selectedFeature: initialFeature,
       ),
     );
   }
