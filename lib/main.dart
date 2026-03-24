@@ -4,7 +4,7 @@
 /// Main App Bootstrap
 ///
 /// 역할:
-/// - Phase 1 placeholder composition으로 Flutter app을 시작한다
+/// - Phase 2 Router composition으로 Flutter app을 시작한다
 ///
 /// 책임:
 /// - app Plugin 초기화를 수행한다
@@ -19,6 +19,8 @@
 /// ===================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:app_forge/engine/engine.dart';
 import 'app/app_config.dart';
 import 'app/app_features.dart';
@@ -28,7 +30,7 @@ import 'app/app_plugins.dart';
 ///
 /// 계약:
 /// - UI를 렌더링하기 전에 app level Plugin을 초기화한다
-/// - Phase 1에서 정의한 placeholder shell로 시작한다
+/// - Phase 2에서 정의한 RouterEngine으로 app을 시작한다
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeAppPlugins();
@@ -40,25 +42,56 @@ Future<void> main() async {
 ///
 /// 계약:
 /// - app이 소유한 config와 Feature 등록 정보만 읽는다
-/// - shell 렌더링은 Engine layer에 위임한다
-class MainApp extends StatelessWidget {
+/// - RouterEngine과 shell 렌더링은 Engine layer에 위임한다
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final initialFeature = findInitialFeature(
-      appFeatures,
-      appConfig.initialFeatureKey,
-    );
+  State<MainApp> createState() => _MainAppState();
+}
 
-    return MaterialApp(
-      title: appConfig.appTitle,
-      debugShowCheckedModeBanner: appConfig.showDebugBanner,
-      theme: appConfig.theme,
-      home: EnginePlaceholderShell(
+class _MainAppState extends State<MainApp> {
+  late final NavigationStateNotifier _navigationNotifier;
+  late final RouterEngine _routerEngine;
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _navigationNotifier = NavigationStateNotifier(
+      initialState: resolveNavigationState(
+        location: appConfig.initialLocation,
+        routes: appRoutes,
+      ),
+    );
+    _routerEngine = RouterEngine(
+      routes: appRouteTrees,
+      initialLocation: appConfig.initialLocation,
+      shellConfig: appConfig.shellConfig,
+      navigationNotifier: _navigationNotifier,
+    );
+    _router = _routerEngine.build();
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    _navigationNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: <Override>[
+        navigationStateNotifierProvider.overrideWithValue(_navigationNotifier),
+      ],
+      child: MaterialApp.router(
         title: appConfig.appTitle,
-        features: appFeatures,
-        selectedFeature: initialFeature,
+        debugShowCheckedModeBanner: appConfig.showDebugBanner,
+        theme: appConfig.theme,
+        routerConfig: _router,
       ),
     );
   }

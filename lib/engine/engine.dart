@@ -19,4 +19,9 @@
 
 export 'src/bootstrap/engine_plugin.dart';
 export 'src/routing/engine_feature.dart';
-export 'src/shell/engine_placeholder_shell.dart';
+export 'src/routing/navigation_state.dart';
+export 'src/routing/route_def.dart';
+export 'src/routing/route_matcher.dart';
+export 'src/routing/router_engine.dart';
+export 'src/shell/engine_shell.dart';
+export 'src/shell/feature_shell.dart';

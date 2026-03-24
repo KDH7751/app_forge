@@ -27,9 +27,13 @@ lib/
     app_plugins.dart
     app_features.dart
   features/
+    auth/
+      presentation/
     home/
       presentation/
-    settings/
+    profile/
+      presentation/
+    posts/
       presentation/
   ui_kit/
 ```
@@ -38,8 +42,8 @@ lib/
 
 - `lib/engine/`: 재사용 가능한 Engine surface와 내부 Engine 구현을 가진다.
 - `lib/engine/src/bootstrap`: composition root가 사용하는 app bootstrap 계약을 가진다.
-- `lib/engine/src/routing`: Phase 1 기준의 Routing abstraction과 placeholder를 가진다.
-- `lib/engine/src/shell`: Engine이 소유하는 재사용 가능한 app shell placeholder를 가진다.
+- `lib/engine/src/routing`: Route DSL, matcher, navigation state, RouterEngine 구현을 가진다.
+- `lib/engine/src/shell`: EngineShell과 FeatureShell 같은 재사용 가능한 shell UI 계약을 가진다.
 - `lib/ui_kit/`: 여러 app에서 재사용할 수 있는 UI token과 widget을 가진다.
 - `lib/app/`: 이 앱의 composition root이자 유일한 app 설정 지점을 가진다.
 - `lib/features/`: vertical slice로 구성된 Feature module을 가진다.
@@ -49,7 +53,7 @@ lib/
 
 app 전용 설정은 반드시 아래 3개 파일로 수렴해야 한다.
 
-- `app_config.dart`: app의 look and feel, 초기 진입 의도, root builder를 정의한다.
+- `app_config.dart`: app의 look and feel, 초기 진입 location, 최소 shell config를 정의한다.
 - `app_plugins.dart`: Plugin 조립과 runtime integration을 정의한다.
 - `app_features.dart`: app에 노출할 Feature 등록 목록을 정의한다.
 

@@ -4,58 +4,63 @@
 /// Engine Feature Contracts
 ///
 /// 역할:
-/// - Engine이 소비하는 최소 Feature 등록 계약을 정의한다
+/// - app이 등록하는 최소 Feature entry 계약을 정의한다
 ///
 /// 책임:
-/// - app이 Feature 진입점을 등록하되
-///   Engine이 Feature 내부 구현을 몰라도 되게 한다
+/// - Feature별 route 묶음을 app composition에 노출한다
+/// - 여러 Feature route를 Engine Router 입력으로 평탄화한다
 ///
 /// 경계:
-/// - Engine은 등록된 Feature page를 렌더링할 수 있다
-/// - auth policy, Repository 로직, Feature state는 모른다
+/// - Engine은 Feature 내부 구현을 모른 채 route 계약만 소비한다
+/// - Feature key 외의 app policy는 담지 않는다
 ///
 /// 의존성:
-/// - Flutter widget type만 참조한다
+/// - route DSL만 참조한다
 /// ===================================================================
 
-import 'package:flutter/widgets.dart';
+import 'route_def.dart';
 
-/// 등록된 Feature의 root page를 빌드한다.
-typedef EngineFeaturePageBuilder = Widget Function(BuildContext context);
-
-/// Engine placeholder shell이 소비하는 최소 Feature descriptor이다.
+/// app이 등록하는 최소 Feature entry다.
 ///
 /// 계약:
-/// - 안정적인 key와 path로 Feature를 식별한다
-/// - Feature 내부 구현을 노출하지 않고 presentation 진입점을 제공한다
+/// - Feature는 안정적인 key를 가진다
+/// - Feature는 자신이 노출할 route 목록만 Engine에 전달한다
 class EngineFeature {
-  const EngineFeature({
-    required this.key,
-    required this.path,
-    required this.label,
-    required this.builder,
-  });
+  const EngineFeature({required this.key, required this.routes});
 
   final String key;
-  final String path;
-  final String label;
-  final EngineFeaturePageBuilder builder;
+  final List<RouteDef> routes;
 }
 
-/// app이 먼저 렌더링할 Feature를 결정한다.
+/// app이 등록한 Feature route tree를 top-level 입력 그대로 수집한다.
+List<RouteDef> collectFeatureRouteTrees(Iterable<EngineFeature> features) {
+  return features.expand((feature) => feature.routes).toList(growable: false);
+}
+
+/// app이 등록한 모든 Feature route를 평탄화한다.
 ///
 /// 계약:
-/// - 설정된 key와 일치하는 Feature를 반환한다
-/// - 일치하는 값이 없으면 첫 번째 등록 Feature로 fallback한다
-EngineFeature? findInitialFeature(
-  Iterable<EngineFeature> features,
-  String initialFeatureKey,
-) {
+/// - top-level route와 children route를 모두 반환한다
+/// - child route path는 이미 절대경로라고 가정한다
+List<RouteDef> collectFeatureRoutes(Iterable<EngineFeature> features) {
+  final routes = <RouteDef>[];
+
   for (final feature in features) {
-    if (feature.key == initialFeatureKey) {
-      return feature;
+    for (final route in feature.routes) {
+      routes.addAll(flattenRouteTree(route));
     }
   }
 
-  return features.isEmpty ? null : features.first;
+  return routes;
+}
+
+/// Route tree를 평탄화한다.
+List<RouteDef> flattenRouteTree(RouteDef route) {
+  final routes = <RouteDef>[route];
+
+  for (final child in route.children) {
+    routes.addAll(flattenRouteTree(child));
+  }
+
+  return routes;
 }

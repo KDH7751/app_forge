@@ -18,6 +18,7 @@
 /// ===================================================================
 
 import 'package:flutter/material.dart';
+import 'package:app_forge/engine/engine.dart';
 
 /// app level 설정 계약이다.
 ///
@@ -27,23 +28,43 @@ import 'package:flutter/material.dart';
 class AppConfig {
   const AppConfig({
     required this.appTitle,
-    required this.initialFeatureKey,
+    required this.initialLocation,
     required this.theme,
+    required this.shellConfig,
     this.showDebugBanner = false,
   });
 
   final String appTitle;
-  final String initialFeatureKey;
+  final String initialLocation;
   final ThemeData theme;
+  final EngineShellConfig shellConfig;
   final bool showDebugBanner;
 }
 
-/// Phase 1 placeholder bootstrap에서 사용하는 기본 app config이다.
+/// Phase 2 router bootstrap에서 사용하는 기본 app config이다.
 final appConfig = AppConfig(
   appTitle: 'App Forge',
-  initialFeatureKey: 'home',
+  initialLocation: '/home',
   theme: ThemeData(
     colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1D3557)),
     useMaterial3: true,
+  ),
+  shellConfig: const EngineShellConfig(
+    drawer: Drawer(
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'App Forge Menu',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
   ),
 );

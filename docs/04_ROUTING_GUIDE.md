@@ -5,28 +5,26 @@
 장기적으로 Routing 시스템은 Engine이 소유하는 route DSL과 app이 주입하는 policy를 기반으로 동작해야 한다.
 
 Engine Router는 auth를 직접 알면 안 된다.
-실제 Router Engine이 도입될 때 redirect policy는 app이 주입한다.
+redirect policy가 필요해지면 그 책임은 app이 가진다.
 
-## Phase 1 범위
+## Phase 2 상태
 
-Phase 1에서는 실제 Router Engine을 구현하지 않는다.
-
-Phase 1에서 제공하는 범위는 다음과 같다.
-
-- 필요한 경우 사용할 placeholder Routing 계약
-- app이 컴파일되도록 만드는 placeholder page
-- 이후 Router 작업의 소유권을 설명하는 문서
-
-Phase 2에서는 다음을 구현한다.
+현재 Phase 2에서 제공하는 범위는 다음과 같다.
 
 - `RouteDef`
 - Router tree composition
 - navigation state
+- location 기반 route matching
 - shell-aware route metadata
-- 주입 가능한 redirect/auth gate policy
+- `EngineShell`
+- `FeatureShell`
 
 ## 반드시 지킬 규칙
 
 - Router Engine은 auth Feature를 import하지 않는다.
-- redirect policy 주입 책임은 app이 가진다.
+- redirect policy는 이번 단계에 구현하지 않는다.
 - shell 노출 여부는 page별 하드코딩이 아니라 route metadata에서 파생되어야 한다.
+- `RouteDef.path`는 top-level과 child 모두 절대경로를 source of truth로 유지한다.
+- GoRouter용 상대경로 변환은 Engine 내부 구현에서만 수행한다.
+- NavigationState는 `location`, `currentRoute`, `pathParams`, `queryParams`, `extra`만 가진다.
+- NavigationState 갱신은 RouterEngine 한 지점에서만 수행한다.
