@@ -2,14 +2,14 @@
 
 ## 목적
 
-이 Template은 재사용 가능한 Engine 인프라와 app 조립 코드, 그리고
-Feature 구현 코드를 분리하기 위해 설계되었다.
+이 Template은 재사용 가능한 Engine 인프라와
+app 조립 코드, Feature 구현 코드를 분리하기 위해 설계되었다.
 
-경계는 다음과 같이 엄격하게 유지한다.
+구조의 핵심 경계는 다음과 같다.
 
-- `lib/engine/`는 policy, flow, abstraction, 재사용 가능한 Engine widget을 가진다.
-- `app/`은 Engine, Plugin, 등록된 Feature를 조립한다.
-- `features/`는 제품 기능을 vertical slice 단위로 가진다.
+- `lib/engine/`는 재사용 가능한 Engine layer를 가진다.
+- `lib/app/`은 이 앱의 composition root를 가진다.
+- `lib/features/`는 제품 기능을 vertical slice 단위로 가진다.
 
 ## 최종 트리
 
@@ -40,22 +40,22 @@ lib/
 
 ## 폴더 책임
 
-- `lib/engine/`: 재사용 가능한 Engine surface와 내부 Engine 구현을 가진다.
-- `lib/engine/src/bootstrap`: composition root가 사용하는 app bootstrap 계약을 가진다.
+- `lib/engine/`: 재사용 가능한 Engine surface와 내부 구현을 가진다.
+- `lib/engine/src/bootstrap`: bootstrap 관련 계약을 가진다.
 - `lib/engine/src/routing`: Route DSL, matcher, navigation state, RouterEngine 구현을 가진다.
-- `lib/engine/src/shell`: EngineShell과 FeatureShell 같은 재사용 가능한 shell UI 계약을 가진다.
-- `lib/ui_kit/`: 여러 app에서 재사용할 수 있는 UI token과 widget을 가진다.
+- `lib/engine/src/shell`: EngineShell, FeatureShell 같은 shell UI 계약을 가진다.
+- `lib/ui_kit/`: 여러 app에서 재사용 가능한 UI token과 widget을 가진다.
 - `lib/app/`: 이 앱의 composition root이자 유일한 app 설정 지점을 가진다.
 - `lib/features/`: vertical slice로 구성된 Feature module을 가진다.
 - `lib/features/**/presentation`: Feature UI와 presentation state를 가진다.
 
-## 3개 app 설정 파일
+## app 설정 파일
 
 app 전용 설정은 반드시 아래 3개 파일로 수렴해야 한다.
 
 - `app_config.dart`: app의 look and feel, 초기 진입 location, 최소 shell config를 정의한다.
 - `app_plugins.dart`: Plugin 조립과 runtime integration을 정의한다.
-- `app_features.dart`: app에 노출할 Feature 등록 목록을 정의한다.
+- `app_features.dart`: app에 등록할 Feature 목록과 route 조립 지점을 정의한다.
 
 이 외의 파일이 두 번째 composition root가 되면 안 된다.
 
@@ -79,8 +79,13 @@ app 전용 설정은 반드시 아래 3개 파일로 수렴해야 한다.
 
 ## Composition 모델
 
-- Engine은 계약과 재사용 가능한 흐름을 정의한다.
-- app은 concrete composition과 policy injection을 제공한다.
-- Feature는 사용자 기능과 route/page 등록 정보를 제공한다.
+- Engine은 policy, flow, abstraction, reusable widget을 가진다.
+- app은 Engine, Plugin, Feature를 조립하는 composition root다.
+- Feature는 제품 기능을 vertical slice 단위로 가진다.
 
 이 구조는 Engine의 재사용성을 유지하고, 제품 도메인 policy가 Engine 안으로 새는 것을 막는다.
+
+## public Engine surface
+
+- app과 Feature가 사용하는 유일한 public Engine import 경로는 `package:app_forge/engine/engine.dart`이다.
+- `lib/engine/src/**`는 internal 구현이며 외부 계약이 아니다.
