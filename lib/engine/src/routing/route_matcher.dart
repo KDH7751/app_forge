@@ -4,23 +4,16 @@
 /// Route Matcher
 ///
 /// 역할:
-/// - location을 등록된 RouteDef와 매칭한다
-///
-/// 책임:
-/// - query를 제외한 path 기준으로 현재 route를 찾는다
-/// - path param을 추출한다
+/// - location을 등록된 RouteDef와 매칭.
 ///
 /// 경계:
-/// - matching 기준은 정확 path, param path, 더 긴 path 우선순위만 가진다
-/// - redirect나 navigation side effect는 수행하지 않는다
-///
-/// 의존성:
-/// - route DSL만 참조한다
+/// - redirect나 navigation side effect는 여기서 다루지 않음.
+/// - query는 matching 기준이 아니라 path 정규화 대상으로만 사용함.
 /// ===================================================================
 
 import 'route_def.dart';
 
-/// location과 매칭된 route 결과다.
+/// route match 결과 모델.
 class RouteMatchResult {
   const RouteMatchResult({required this.route, required this.pathParams});
 
@@ -28,12 +21,8 @@ class RouteMatchResult {
   final Map<String, String> pathParams;
 }
 
-/// location에 해당하는 RouteDef를 찾는다.
-///
-/// 우선순위:
-/// 1. 정확 path
-/// 2. param path
-/// 3. 더 긴 path
+/// 현재 location에 해당하는 RouteDef 검색.
+/// 우선순위: 정확 path, param path, 더 긴 path.
 RouteMatchResult? matchRouteLocation(
   String location,
   Iterable<RouteDef> routes,
@@ -72,7 +61,7 @@ RouteMatchResult? matchRouteLocation(
   return RouteMatchResult(route: best.route, pathParams: best.pathParams);
 }
 
-/// location에서 query와 trailing slash를 제거한 path만 반환한다.
+/// matching 기준 path 정규화.
 String normalizeLocationPath(String location) {
   final uri = Uri.parse(location);
   final rawPath = uri.path.isEmpty ? '/' : uri.path;
@@ -84,6 +73,7 @@ String normalizeLocationPath(String location) {
   return rawPath;
 }
 
+/// match 우선순위 비교.
 int _compareCandidates(_RouteCandidate left, _RouteCandidate right) {
   if (left.isExactPath != right.isExactPath) {
     return left.isExactPath ? -1 : 1;
@@ -97,6 +87,7 @@ int _compareCandidates(_RouteCandidate left, _RouteCandidate right) {
   return right.staticSegmentCount.compareTo(left.staticSegmentCount);
 }
 
+/// route path와 location path의 segment 단위 매칭.
 _PathMatch? _matchPath({
   required String routePath,
   required String locationPath,
@@ -131,22 +122,27 @@ _PathMatch? _matchPath({
   return _PathMatch(pathParams: pathParams, isExactPath: false);
 }
 
+/// path segment 목록 추출.
 List<String> _segmentsOf(String path) {
   return path.split('/').where((segment) => segment.isNotEmpty).toList();
 }
 
+/// param segment 여부 확인.
 bool _isParamSegment(String segment) {
   return segment.startsWith(':') && segment.length > 1;
 }
 
+/// path segment 개수 계산.
 int _segmentCount(String path) {
   return _segmentsOf(path).length;
 }
 
+/// static segment 개수 계산.
 int _staticSegmentCount(String path) {
   return _segmentsOf(path).where((segment) => !_isParamSegment(segment)).length;
 }
 
+/// 내부 path match 결과.
 class _PathMatch {
   const _PathMatch({required this.pathParams, required this.isExactPath});
 
@@ -154,6 +150,7 @@ class _PathMatch {
   final bool isExactPath;
 }
 
+/// route candidate 정렬용 내부 모델.
 class _RouteCandidate {
   const _RouteCandidate({
     required this.route,

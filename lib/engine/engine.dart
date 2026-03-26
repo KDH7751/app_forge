@@ -4,17 +4,11 @@
 /// Engine Public API
 ///
 /// 역할:
-/// - app과 Feature가 사용할 유일한 Engine surface를 노출한다
-///
-/// 책임:
-/// - runtime code가 사용할 안정적인 Engine 계약만 다시 노출한다
+/// - app과 Feature가 사용하는 유일한 Engine surface 제공.
 ///
 /// 경계:
-/// - 외부 import에서 `lib/engine/src/**`를 숨긴다
-/// - Feature 전용 구현이나 app 전용 구현은 노출하지 않는다
-///
-/// 의존성:
-/// - Engine이 소유한 계약만 다시 노출한다
+/// - `lib/engine/src/**` 내부 구현은 외부에 노출하지 않음.
+/// - app/Feature 전용 구현은 여기서 공개하지 않음.
 /// ===================================================================
 
 export 'src/bootstrap/engine_plugin.dart';

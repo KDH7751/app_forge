@@ -4,18 +4,11 @@
 /// Main App Bootstrap
 ///
 /// 역할:
-/// - Phase 2 Router composition으로 Flutter app을 시작한다
-///
-/// 책임:
-/// - app Plugin 초기화를 수행한다
-/// - app config, 등록된 Feature, Engine shell을 연결한다
+/// - app Plugin 초기화와 Router composition bootstrap 담당.
 ///
 /// 경계:
-/// - app composition 세부 사항은 안다
-/// - Router policy나 Feature 비즈니스 로직은 구현하지 않는다
-///
-/// 의존성:
-/// - app layer와 public Engine barrel만 참조한다
+/// - app composition 세부 사항만 조립함.
+/// - Router policy나 Feature 비즈니스 로직은 구현하지 않음.
 /// ===================================================================
 
 import 'package:flutter/material.dart';
@@ -26,11 +19,7 @@ import 'app/app_config.dart';
 import 'app/app_features.dart';
 import 'app/app_plugins.dart';
 
-/// app을 부트스트랩한다.
-///
-/// 계약:
-/// - UI를 렌더링하기 전에 app level Plugin을 초기화한다
-/// - Phase 2에서 정의한 RouterEngine으로 app을 시작한다
+/// app bootstrap 진입점.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeAppPlugins();
@@ -38,23 +27,22 @@ Future<void> main() async {
   runApp(const MainApp());
 }
 
-/// 현재 app composition의 root widget이다.
-///
-/// 계약:
-/// - app이 소유한 config와 Feature 등록 정보만 읽는다
-/// - RouterEngine과 shell 렌더링은 Engine layer에 위임한다
+/// app composition root widget.
 class MainApp extends StatefulWidget {
   const MainApp({super.key});
 
+  /// stateful app root state 생성.
   @override
   State<MainApp> createState() => _MainAppState();
 }
 
+/// app Router와 notifier를 소유하는 root state.
 class _MainAppState extends State<MainApp> {
   late final NavigationStateNotifier _navigationNotifier;
   late final RouterEngine _routerEngine;
   late final GoRouter _router;
 
+  /// 초기 navigation 상태와 RouterEngine 구성.
   @override
   void initState() {
     super.initState();
@@ -74,6 +62,7 @@ class _MainAppState extends State<MainApp> {
     _router = _routerEngine.build();
   }
 
+  /// Router와 notifier 정리.
   @override
   void dispose() {
     _router.dispose();
@@ -81,6 +70,7 @@ class _MainAppState extends State<MainApp> {
     super.dispose();
   }
 
+  /// ProviderScope와 MaterialApp.router 조립.
   @override
   Widget build(BuildContext context) {
     return ProviderScope(

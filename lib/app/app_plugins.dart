@@ -4,22 +4,16 @@
 /// App Plugins
 ///
 /// 역할:
-/// - 이 app의 concrete Plugin bootstrap을 조립한다
-///
-/// 책임:
-/// - Engine에 주입되는 app 측 구현 목록 역할을 한다
+/// - 이 app이 Engine에 주입할 concrete Plugin 목록 조립.
 ///
 /// 경계:
-/// - composition root 입력으로서 app layer에 속한다
-/// - Engine policy나 Feature UI는 정의하지 않는다
-///
-/// 의존성:
-/// - public Engine barrel만 참조한다
+/// - bootstrap 정책은 Engine에 둠.
+/// - 실제 Plugin 선택은 app이 소유함.
 /// ===================================================================
 
 import 'package:app_forge/engine/engine.dart';
 
-/// app layer가 소유하는 Plugin 목록이다.
+/// app 소유 Plugin 등록 목록.
 final appPlugins = <EnginePlugin>[
   const EnginePlugin(
     name: 'placeholder_observe',
@@ -27,13 +21,10 @@ final appPlugins = <EnginePlugin>[
   ),
 ];
 
-/// app composition root에 등록된 모든 Plugin을 초기화한다.
-///
-/// 계약:
-/// - 등록 순서대로 Plugin bootstrap을 수행한다
-/// - bootstrap 흐름은 Engine 추상화에 위임한다
+/// app 등록 Plugin bootstrap의 Engine 위임 진입점.
 Future<void> initializeAppPlugins() {
   return bootstrapEnginePlugins(appPlugins);
 }
 
+/// placeholder observe Plugin bootstrap.
 Future<void> _bootstrapObservePlugin() async {}

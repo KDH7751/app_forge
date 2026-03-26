@@ -1,28 +1,11 @@
-// ignore_for_file: dangling_library_doc_comments
-
-/// ===================================================================
-/// Login Page
-///
-/// 역할:
-/// - standalone login route의 검증용 진입점을 제공한다
-///
-/// 책임:
-/// - shell 밖에서 렌더링되는 최소 페이지를 보여준다
-///
-/// 경계:
-/// - auth 비즈니스 로직은 구현하지 않는다
-/// - engine shell을 직접 알지 않는다
-///
-/// 의존성:
-/// - Flutter presentation type만 참조한다
-/// ===================================================================
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+/// shell 밖 standalone route 예시.
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
+  /// standalone login 화면 렌더링.
   @override
   Widget build(BuildContext context) {
     return Scaffold(

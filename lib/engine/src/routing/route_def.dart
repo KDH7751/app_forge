@@ -1,36 +1,24 @@
 // ignore_for_file: dangling_library_doc_comments
 
 /// ===================================================================
-/// Route Definition Contracts
+/// RouteDef
 ///
 /// 역할:
-/// - Engine Router가 소비하는 최소 route DSL을 정의한다
-///
-/// 책임:
-/// - route path, name, builder와 shell 노출 정책을 담는다
-/// - nested route를 children 트리로 표현한다
+/// - Engine Router가 소비하는 최소 route DSL 제공.
 ///
 /// 경계:
-/// - child path도 모두 절대경로로 유지한다
-/// - redirect, analytics, transition 같은 확장 필드는 다루지 않는다
-///
-/// 의존성:
-/// - Flutter widget type과 GoRouter state만 참조한다
+/// - child route를 포함해 path는 항상 절대경로를 source of truth로 유지함.
+/// - shell 정책은 metadata로만 표현함.
 /// ===================================================================
 
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-/// Engine route page를 빌드한다.
+/// RouteDef page builder 시그니처.
 typedef RouteDefBuilder =
     Widget Function(BuildContext context, GoRouterState state);
 
-/// Engine이 소유하는 최소 route descriptor다.
-///
-/// 계약:
-/// - path는 절대경로만 허용한다
-/// - children은 구조 표현용이며 child path도 절대경로를 쓴다
-/// - shell 적용 여부는 useShell로만 결정한다
+/// shell metadata를 포함한 최소 route descriptor.
 class RouteDef {
   RouteDef({
     required this.path,
@@ -60,8 +48,10 @@ class RouteDef {
   final bool showDrawer;
   final bool useShell;
 
+  /// child route 존재 여부.
   bool get hasChildren => children.isNotEmpty;
 
+  /// 일부 metadata만 바꾼 RouteDef 복사본.
   RouteDef copyWith({
     String? path,
     String? name,
@@ -89,10 +79,12 @@ class RouteDef {
   }
 }
 
+/// 절대경로 여부 확인.
 bool _isAbsolutePath(String path) {
   return path.startsWith('/');
 }
 
+/// child route path의 절대경로 사용 여부 확인.
 bool _childrenUseAbsolutePaths(List<RouteDef> children) {
   for (final child in children) {
     if (!_isAbsolutePath(child.path)) {

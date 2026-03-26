@@ -4,23 +4,17 @@
 /// Feature Shell
 ///
 /// 역할:
-/// - Feature 비동기 상태를 감싸는 최소 UI wrapper를 제공한다
-///
-/// 책임:
-/// - AsyncValue의 loading, error, data 분기를 일관되게 처리한다
+/// - Feature 화면의 AsyncValue 분기용 공통 UI wrapper 제공.
 ///
 /// 경계:
-/// - Result/AppError 정책은 이번 단계에서 다루지 않는다
-/// - 세부 refresh 동작 옵션은 최소 수준만 허용한다
-///
-/// 의존성:
-/// - Flutter material과 Riverpod AsyncValue만 참조한다
+/// - loading / error / data 분기만 다룸.
+/// - 도메인 에러 정책 해석은 이 계층 밖에 둠.
 /// ===================================================================
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Feature 화면에서 사용하는 최소 async 상태 wrapper다.
+/// AsyncValue 분기용 Feature 화면 wrapper.
 class FeatureShell<T> extends StatelessWidget {
   const FeatureShell({
     super.key,
@@ -35,6 +29,7 @@ class FeatureShell<T> extends StatelessWidget {
   final VoidCallback? onRetry;
   final String? loadingMessage;
 
+  /// AsyncValue 상태별 공통 UI 분기.
   @override
   Widget build(BuildContext context) {
     return value.when(
@@ -45,11 +40,13 @@ class FeatureShell<T> extends StatelessWidget {
   }
 }
 
+/// loading 상태용 내부 위젯.
 class _FeatureLoadingState extends StatelessWidget {
   const _FeatureLoadingState({this.message});
 
   final String? message;
 
+  /// loading indicator와 message 렌더링.
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -67,12 +64,14 @@ class _FeatureLoadingState extends StatelessWidget {
   }
 }
 
+/// error 상태용 내부 위젯.
 class _FeatureErrorState extends StatelessWidget {
   const _FeatureErrorState({required this.error, this.onRetry});
 
   final Object error;
   final VoidCallback? onRetry;
 
+  /// error 메시지와 retry action 렌더링.
   @override
   Widget build(BuildContext context) {
     return Center(

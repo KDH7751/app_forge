@@ -4,17 +4,11 @@
 /// App Features
 ///
 /// 역할:
-/// - 이 app에서 사용할 Feature slice를 등록한다
-///
-/// 책임:
-/// - app이 소유한 Feature composition을 Engine shell에 노출한다
+/// - 이 app이 활성화할 Feature와 route tree를 조립한다.
 ///
 /// 경계:
-/// - 어떤 Feature가 활성화됐는지는 안다
-/// - Engine 내부에서 Router policy를 구현하지는 않는다
-///
-/// 의존성:
-/// - public Engine barrel과 app local Feature page를 참조한다
+/// - route 정책 조합은 app이 소유한다.
+/// - Router 구현은 Engine에 맡긴다.
 /// ===================================================================
 
 import 'package:flutter/material.dart';
@@ -24,7 +18,7 @@ import '../features/home/presentation/home_page.dart';
 import '../features/posts/presentation/post_detail_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 
-/// Phase 2에서 app bootstrap이 사용하는 Feature registry이다.
+/// app 활성 Feature 등록 목록.
 final appFeatures = <EngineFeature>[
   EngineFeature(
     key: 'auth',
@@ -95,15 +89,17 @@ final appFeatures = <EngineFeature>[
   ),
 ];
 
-/// RouterEngine 입력으로 사용하는 route tree다.
+/// Router tree 구성용 top-level route 목록.
 final appRouteTrees = collectFeatureRouteTrees(appFeatures);
 
-/// matcher와 navigation state가 사용하는 평탄화 route 목록이다.
+/// route matching / navigation sync용 flat route 목록.
 final appRoutes = collectFeatureRoutes(appFeatures);
 
+/// nested posts route placeholder 페이지.
 class _PostsPage extends StatelessWidget {
   const _PostsPage();
 
+  /// posts placeholder 본문 렌더링.
   @override
   Widget build(BuildContext context) {
     return const Center(

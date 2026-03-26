@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_forge/main.dart';
 
+/// router shell 동작 검증용 widget test 묶음.
 void main() {
   testWidgets('Phase 2 router app renders shell home route', (tester) async {
     await tester.pumpWidget(const MainApp());
