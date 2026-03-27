@@ -14,7 +14,7 @@
 import 'package:flutter/material.dart';
 import 'package:app_forge/engine/engine.dart';
 
-/// bootstrap 시점 app composition root용 설정 계약.
+/// runtime 시작 시점 app composition root용 설정 계약.
 class AppConfig {
   const AppConfig({
     required this.appTitle,

@@ -4,9 +4,10 @@
 /// Auth Action Controller
 ///
 /// 역할:
-/// - login/logout 액션 상태와 AppError 표시 상태를 소유함.
+/// - auth presentation layer의 controller로 login/logout 액션 상태와 AppError 표시 상태를 소유함.
 ///
 /// 경계:
+/// - auth는 UI page를 소유하지 않음.
 /// - navigation은 직접 호출하지 않음.
 /// - Firebase/Firestore 접근은 repository에 위임함.
 /// ===================================================================

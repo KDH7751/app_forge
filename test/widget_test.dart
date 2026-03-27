@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:app_forge/app/app_bootstrap.dart';
+import 'package:app_forge/bootstrap/bootstrap.dart';
 import 'package:app_forge/features/auth/domain/auth_repository.dart';
 import 'package:app_forge/features/auth/domain/auth_session.dart';
 import 'package:app_forge/features/auth/domain/result.dart';
@@ -17,7 +17,7 @@ void main() {
     addTearDown(repository.dispose);
 
     await tester.pumpWidget(
-      AppBootstrap(
+      Bootstrap(
         overrides: <Override>[
           authRepositoryProvider.overrideWithValue(repository),
         ],
@@ -44,7 +44,7 @@ void main() {
     addTearDown(repository.dispose);
 
     await tester.pumpWidget(
-      AppBootstrap(
+      Bootstrap(
         overrides: <Override>[
           authRepositoryProvider.overrideWithValue(repository),
         ],
@@ -69,7 +69,7 @@ void main() {
     addTearDown(repository.dispose);
 
     await tester.pumpWidget(
-      AppBootstrap(
+      Bootstrap(
         overrides: <Override>[
           authRepositoryProvider.overrideWithValue(repository),
         ],
@@ -95,7 +95,7 @@ void main() {
     addTearDown(repository.dispose);
 
     await tester.pumpWidget(
-      AppBootstrap(
+      Bootstrap(
         overrides: <Override>[
           authRepositoryProvider.overrideWithValue(repository),
         ],
@@ -124,7 +124,7 @@ void main() {
       addTearDown(repository.dispose);
 
       await tester.pumpWidget(
-        AppBootstrap(
+        Bootstrap(
           overrides: <Override>[
             authRepositoryProvider.overrideWithValue(repository),
           ],
@@ -152,7 +152,7 @@ void main() {
     addTearDown(repository.dispose);
 
     await tester.pumpWidget(
-      AppBootstrap(
+      Bootstrap(
         overrides: <Override>[
           authRepositoryProvider.overrideWithValue(repository),
         ],

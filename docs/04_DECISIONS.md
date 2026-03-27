@@ -28,3 +28,8 @@
 - 2026-03-27: `users/{uid}` upsert는 repository 내부에서만 호출하고 `DocumentReference.get() -> set/update` 방식으로 고정한다.
 - 2026-03-27: users upsert 실패 시 repository 내부에서 rollback signOut을 시도하고 실패 여부와 무관하게 login은 실패로 닫는다.
 - 2026-03-27: `AppError`, `Result<T>`, logger는 auth slice 내부의 임시 generic core로 구현하고 shared core로 간주하지 않는다.
+- 2026-03-27: runtime bootstrap host는 `lib/bootstrap/bootstrap.dart`로 두고, app 설정은 계속 `app_config.dart`, `app_plugins.dart`, `app_features.dart` 3파일만 source of truth로 유지한다.
+- 2026-03-27: engine 내부의 bootstrap 개념은 `plugins`로 rename하고 public engine surface는 이를 export한다.
+- 2026-03-27: auth feature는 UI page를 소유하지 않고 provider/controller 같은 presentation layer만 가진다.
+- 2026-03-27: login page는 별도 login feature로 분리하고 auth 기능을 소비만 한다.
+- 2026-03-27: feature는 필요한 layer만 가진다. `domain/data/presentation`을 모두 강제하지 않는다.

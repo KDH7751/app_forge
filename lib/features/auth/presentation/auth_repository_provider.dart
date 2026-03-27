@@ -16,7 +16,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/debug_app_logger.dart';
-import '../data/firebase_auth_repository.dart';
+import '../data/auth_repository_firebase.dart';
 import '../data/users_document_datasource.dart';
 import '../domain/app_logger.dart';
 import '../domain/auth_repository.dart';
@@ -51,7 +51,7 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final usersDataSource = ref.watch(usersDocumentDataSourceProvider);
   final logger = ref.watch(appLoggerProvider);
 
-  return FirebaseAuthRepository(
+  return AuthRepositoryFirebase(
     firebaseAuth: firebaseAuth,
     usersDataSource: usersDataSource,
     logger: logger,

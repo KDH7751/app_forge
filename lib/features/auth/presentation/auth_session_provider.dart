@@ -4,9 +4,10 @@
 /// Auth Session Provider
 ///
 /// 역할:
-/// - repository의 auth session stream을 AuthSession 기준 provider로 노출함.
+/// - auth presentation layer의 provider로 repository session stream을 AuthSession 기준으로 노출함.
 ///
 /// 경계:
+/// - auth는 UI page를 소유하지 않음.
 /// - FirebaseUser를 직접 노출하지 않음.
 /// - redirect 판단은 app layer가 소유함.
 /// ===================================================================

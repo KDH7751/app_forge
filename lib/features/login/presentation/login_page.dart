@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'auth_action_controller.dart';
+import '../../auth/presentation/auth_action_controller.dart';
 
-/// shell 밖 standalone route 예시.
+/// auth 기능을 소비하는 login feature의 page.
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -11,7 +11,7 @@ class LoginPage extends ConsumerStatefulWidget {
   ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-/// email/password login 입력 화면.
+/// auth controller/provider를 소비하는 email/password login 입력 화면.
 class _LoginPageState extends ConsumerState<LoginPage> {
   late final TextEditingController _emailController;
   late final TextEditingController _passwordController;
@@ -30,7 +30,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
-  /// login form 화면 렌더링.
+  /// redirect에 navigation을 맡기고 login form만 렌더링.
   @override
   Widget build(BuildContext context) {
     final actionState = ref.watch(authActionControllerProvider);

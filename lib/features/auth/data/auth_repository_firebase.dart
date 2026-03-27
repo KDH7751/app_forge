@@ -21,8 +21,8 @@ import '../domain/result.dart';
 import 'users_document_datasource.dart';
 
 /// Firebase 기반 auth repository 구현.
-class FirebaseAuthRepository implements AuthRepository {
-  FirebaseAuthRepository({
+class AuthRepositoryFirebase implements AuthRepository {
+  AuthRepositoryFirebase({
     required FirebaseAuth firebaseAuth,
     required UsersDocumentDataSource usersDataSource,
     required AppLogger logger,

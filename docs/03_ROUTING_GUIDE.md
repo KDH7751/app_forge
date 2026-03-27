@@ -7,6 +7,7 @@ app이 조립하는 route registration을 기반으로 동작한다.
 
 Engine Router는 auth를 직접 알면 안 된다.
 redirect policy가 필요해지면 그 책임은 app이 가진다.
+login page는 별도 login feature가 소유하고, auth는 그 기능을 지원만 한다.
 
 ## 현재 범위
 
@@ -118,12 +119,18 @@ shell 내부 route는 metadata로 제어한다.
 - `/profile`: shell + drawer
 - `/posts/:id`: shell 내부 detail, bottomNav/drawer 숨김
 
+`/login` route는 login feature의 page를 렌더링한다.
+login feature는 auth controller/provider를 소비하지만 redirect는 직접 처리하지 않는다.
+
 ## EngineFeature와 route 등록
 
 app은 Engine route contract를 사용해 Feature route tree를 조립한다.
 
 - `appRouteTrees`: GoRouter tree 구성용
 - `appRoutes`: matcher / currentRoute 판별용
+
+engine naming은 개념 기반 이름을 유지한다.
+feature layer naming 규칙을 `route_def`, `router_engine`, `navigation_state` 같은 engine 파일에 적용하지 않는다.
 
 ## FeatureShell 규칙
 

@@ -7,8 +7,8 @@
 /// - 이 app이 Engine에 주입할 concrete Plugin 목록 조립.
 ///
 /// 경계:
-/// - bootstrap 정책은 Engine에 둠.
-/// - 실제 Plugin 선택은 app이 소유함.
+/// - plugin 실행 순서는 Engine에 둠.
+/// - 실제 plugin 선택은 app이 소유함.
 /// ===================================================================
 
 import 'package:app_forge/engine/engine.dart';
@@ -16,19 +16,16 @@ import 'package:firebase_core/firebase_core.dart';
 
 /// app 소유 Plugin 등록 목록.
 final appPlugins = <EnginePlugin>[
-  const EnginePlugin(
-    name: 'firebase_core',
-    bootstrap: _bootstrapFirebaseCorePlugin,
-  ),
+  const EnginePlugin(name: 'firebase_core', run: _runFirebaseCorePlugin),
 ];
 
-/// app 등록 Plugin bootstrap의 Engine 위임 진입점.
+/// app 등록 plugin 실행의 Engine 위임 진입점.
 Future<void> initializeAppPlugins() {
-  return bootstrapEnginePlugins(appPlugins);
+  return runEnginePlugins(appPlugins);
 }
 
-/// Firebase Core bootstrap.
-Future<void> _bootstrapFirebaseCorePlugin() async {
+/// Firebase Core plugin 실행.
+Future<void> _runFirebaseCorePlugin() async {
   if (Firebase.apps.isNotEmpty) {
     return;
   }

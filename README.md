@@ -45,6 +45,7 @@ Feature를 추가하는 방식으로 확장할 수 있어야 한다.
 ```text
 lib/
   main.dart
+  bootstrap/   # runtime bootstrap host
   engine/      # 재사용 가능한 Engine layer
   ui_kit/      # 재사용 가능한 UI primitive와 token
   app/         # 이 앱의 composition root
@@ -69,6 +70,8 @@ app 설정은 아래 3개 파일에서만 수행한다.
 - Engine은 policy, flow, abstraction을 소유하고 concrete 구현은 app이 주입한다.
 - app은 Engine, Plugin, Feature를 조립하는 composition root다.
 - 각 Feature는 vertical slice로 확장되어야 한다.
+- Feature는 필요한 layer만 가진다. 빈 `domain/`, `data/` 폴더를 강제하지 않는다.
+- auth의 presentation은 provider/controller layer를 뜻하며, login page는 별도 login feature가 소유한다.
 
 ## 현재 범위에 포함되지 않는 것
 

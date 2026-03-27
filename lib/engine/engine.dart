@@ -11,7 +11,7 @@
 /// - app/Feature 전용 구현은 여기서 공개하지 않음.
 /// ===================================================================
 
-export 'src/bootstrap/engine_plugin.dart';
+export 'src/plugins/engine_plugin.dart';
 export 'src/routing/engine_feature.dart';
 export 'src/routing/navigation_state.dart';
 export 'src/routing/route_def.dart';

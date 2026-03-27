@@ -1,14 +1,14 @@
 // ignore_for_file: dangling_library_doc_comments
 
 /// ===================================================================
-/// App Bootstrap
+/// Bootstrap
 ///
 /// 역할:
-/// - app composition host로 RouterEngine과 app redirect를 조립함.
+/// - runtime bootstrap host로 app 설정 3파일을 소비해 RouterEngine과 redirect bridge를 조립함.
 ///
 /// 경계:
-/// - app 설정 source of truth가 되지 않음.
-/// - redirect 정책 정의 자체는 app_features가 소유함.
+/// - source of truth가 아니며 app 설정은 `lib/app`의 3파일로만 수렴함.
+/// - `app_config`, `app_plugins`, `app_features`를 소비만 하고 설정을 재정의하지 않음.
 /// ===================================================================
 
 import 'package:flutter/material.dart';
@@ -16,30 +16,30 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_forge/engine/engine.dart';
 
-import 'app_config.dart';
-import 'app_features.dart';
+import '../app/app_config.dart';
+import '../app/app_features.dart';
 import '../features/auth/domain/auth_session.dart';
 import '../features/auth/presentation/auth_session_provider.dart';
 
-/// app root composition host.
-class AppBootstrap extends StatefulWidget {
-  const AppBootstrap({super.key, this.overrides = const <Override>[]});
+/// runtime bootstrap host widget.
+class Bootstrap extends StatefulWidget {
+  const Bootstrap({super.key, this.overrides = const <Override>[]});
 
   final List<Override> overrides;
 
-  /// stateful composition host state 생성.
+  /// stateful bootstrap state 생성.
   @override
-  State<AppBootstrap> createState() => _AppBootstrapState();
+  State<Bootstrap> createState() => _BootstrapState();
 }
 
-/// Router와 navigation notifier를 소유하는 app host state.
-class _AppBootstrapState extends State<AppBootstrap> {
+/// Router와 bridge notifier를 소유하는 runtime bootstrap state.
+class _BootstrapState extends State<Bootstrap> {
   late final NavigationStateNotifier _navigationNotifier;
   late final ValueNotifier<AppAuthRedirectStatus> _authRedirectNotifier;
   late final RouterEngine _routerEngine;
   late final GoRouter _router;
 
-  /// 초기 navigation 상태와 redirect host 구성.
+  /// 초기 navigation 상태와 redirect bridge 구성.
   @override
   void initState() {
     super.initState();
@@ -90,7 +90,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
         navigationStateNotifierProvider.overrideWithValue(_navigationNotifier),
         ...widget.overrides,
       ],
-      child: _AppBootstrapView(
+      child: _BootstrapView(
         router: _router,
         authRedirectNotifier: _authRedirectNotifier,
       ),
@@ -98,9 +98,9 @@ class _AppBootstrapState extends State<AppBootstrap> {
   }
 }
 
-/// Provider bridge를 포함한 app router host.
-class _AppBootstrapView extends ConsumerStatefulWidget {
-  const _AppBootstrapView({
+/// Provider bridge를 포함한 runtime host view.
+class _BootstrapView extends ConsumerStatefulWidget {
+  const _BootstrapView({
     required this.router,
     required this.authRedirectNotifier,
   });
@@ -109,11 +109,11 @@ class _AppBootstrapView extends ConsumerStatefulWidget {
   final ValueNotifier<AppAuthRedirectStatus> authRedirectNotifier;
 
   @override
-  ConsumerState<_AppBootstrapView> createState() => _AppBootstrapViewState();
+  ConsumerState<_BootstrapView> createState() => _BootstrapViewState();
 }
 
 /// auth session provider와 redirect notifier를 연결하는 state.
-class _AppBootstrapViewState extends ConsumerState<_AppBootstrapView> {
+class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   ProviderSubscription<AsyncValue<AuthSession?>>? _authSessionSubscription;
 
   @override
