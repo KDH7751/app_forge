@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase (로컬 설정 - 커밋하지 마시오)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
