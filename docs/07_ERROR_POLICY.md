@@ -23,13 +23,22 @@
 
 ## 현재 상태
 
-현재 Phase 2에서는 이 문서의 규칙을 **구조 기준으로만 유지**한다.
+현재 Phase 3에서는 auth slice 안에서 이 규칙을 최소 범위로 구현한다.
 
 즉,
-- `Result<T>` / `AppError` 방향은 확정되어 있지만
-- 실제 구현과 Firebase/Auth 연동은 아직 포함하지 않는다.
+- `Result<T>` / `AppError` 방향은 실제 auth login/logout 흐름에 적용되어 있고
+- Firebase Auth / Firestore 예외는 repository에서 `AppError`로 변환된다.
 
-이 부분은 이후 Phase에서 구체화한다.
+다만 shared core 승격은 아직 하지 않는다.
+
+## Phase 3 auth 메시지 규칙
+
+현재 auth UI에 노출 가능한 메시지는 아래 4개만 허용한다.
+
+- 사용자를 찾을 수 없습니다
+- 비밀번호가 올바르지 않습니다
+- 네트워크 문제로 로그인할 수 없습니다
+- 로그인에 실패했습니다. 다시 시도해주세요
 
 ## 원칙
 

@@ -23,6 +23,9 @@
 - auth session contract
 - Result / AppError core type
 
+현재 위 항목 중 `logger`, `auth session contract`, `Result / AppError`는 auth slice 내부에 최소 구현이 들어가 있다.
+아직 shared core로 승격된 상태는 아니다.
+
 ## Could
 
 - Firebase 외 backend를 위한 generic network layer

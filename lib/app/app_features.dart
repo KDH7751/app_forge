@@ -18,6 +18,9 @@ import '../features/home/presentation/home_page.dart';
 import '../features/posts/presentation/post_detail_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 
+/// app redirect 판단용 최소 auth 상태.
+enum AppAuthRedirectStatus { unknown, authenticated, unauthenticated }
+
 /// app 활성 Feature 등록 목록.
 final appFeatures = <EngineFeature>[
   EngineFeature(
@@ -94,6 +97,29 @@ final appRouteTrees = collectFeatureRouteTrees(appFeatures);
 
 /// route matching / navigation sync용 flat route 목록.
 final appRoutes = collectFeatureRoutes(appFeatures);
+
+/// app layer가 소유하는 redirect 정책.
+String? resolveAppRedirect({
+  required AppAuthRedirectStatus authStatus,
+  required String location,
+}) {
+  if (authStatus == AppAuthRedirectStatus.unknown) {
+    return null;
+  }
+
+  final normalizedLocation = normalizeLocationPath(location);
+  final isLoginRoute = normalizedLocation == '/login';
+
+  if (authStatus == AppAuthRedirectStatus.unauthenticated && !isLoginRoute) {
+    return '/login';
+  }
+
+  if (authStatus == AppAuthRedirectStatus.authenticated && isLoginRoute) {
+    return '/home';
+  }
+
+  return null;
+}
 
 /// nested posts route placeholder 페이지.
 class _PostsPage extends StatelessWidget {

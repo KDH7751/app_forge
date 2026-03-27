@@ -12,12 +12,13 @@
 /// ===================================================================
 
 import 'package:app_forge/engine/engine.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 /// app 소유 Plugin 등록 목록.
 final appPlugins = <EnginePlugin>[
   const EnginePlugin(
-    name: 'placeholder_observe',
-    bootstrap: _bootstrapObservePlugin,
+    name: 'firebase_core',
+    bootstrap: _bootstrapFirebaseCorePlugin,
   ),
 ];
 
@@ -26,5 +27,12 @@ Future<void> initializeAppPlugins() {
   return bootstrapEnginePlugins(appPlugins);
 }
 
-/// placeholder observe Plugin bootstrap.
-Future<void> _bootstrapObservePlugin() async {}
+/// Firebase Core bootstrap.
+Future<void> _bootstrapFirebaseCorePlugin() async {
+  if (Firebase.apps.isNotEmpty) {
+    return;
+  }
+
+  // 실제 project wiring은 flutterfire configure와 플랫폼 설정이 담당한다.
+  await Firebase.initializeApp();
+}

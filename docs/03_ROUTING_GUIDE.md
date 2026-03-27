@@ -19,11 +19,12 @@ redirect policy가 필요해지면 그 책임은 app이 가진다.
 - `RouterEngine`
 - `EngineShell`
 - `FeatureShell`
+- app-defined auth redirect
+- `refreshListenable` 기반 redirect 재평가
 
 다음은 아직 포함하지 않는다.
 
-- auth redirect policy
-- protected route 정책
+- role/status 기반 protected route 정책
 - route transition 확장
 - analytics metadata
 - route-level business policy
@@ -96,6 +97,9 @@ NavigationState 갱신은 RouterEngine의 단일 sync 지점이 소유한다.
 - redirect 안에서 상태를 갱신하지 않는다
 - widget build 중 임의로 상태를 sync하지 않는다
 - post frame / microtask 같은 우회성 갱신에 기대지 않는다
+
+redirect 재평가는 `refreshListenable`로만 트리거한다.
+provider나 Firebase 상태는 app layer가 `Listenable`로 bridge해서 RouterEngine에 주입한다.
 
 ## shell 규칙
 

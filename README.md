@@ -12,7 +12,7 @@ Feature를 추가하는 방식으로 확장할 수 있어야 한다.
 
 ## 현재 상태
 
-현재 Phase 2까지 완료되었다.
+현재 Phase 3까지 완료되었다.
 
 구현된 범위:
 
@@ -22,6 +22,12 @@ Feature를 추가하는 방식으로 확장할 수 있어야 한다.
 - `NavigationState`
 - `EngineShell`
 - `FeatureShell`
+- `Firebase.initializeApp()` bootstrap 진입
+- 이메일/비밀번호 login / logout
+- `AuthSession` provider
+- app layer auth redirect
+- `users/{uid}` upsert 보장
+- auth 내부 최소 `AppError` / `Result<T>` / logger
 - 검증 라우트
   - `/login`
   - `/home`
@@ -68,12 +74,12 @@ app 설정은 아래 3개 파일에서만 수행한다.
 
 다음은 아직 현재 범위에 포함되지 않는다.
 
-- Firebase 초기화
-- auth redirect / protected route 정책
-- Result<T> / AppError 본구현
-- 실제 Feature domain / data 구조
 - shell 고급 커스터마이징
 - route transition / analytics 확장
+- 회원가입 / 비밀번호 재설정
+- role/status 기반 접근 제어
+- 소셜 로그인
+- shared error / logger core 승격
 
 이 항목들은 이후 Phase에서 도입한다.
 

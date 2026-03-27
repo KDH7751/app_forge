@@ -26,8 +26,11 @@ lib/
     app_config.dart
     app_plugins.dart
     app_features.dart
+    app_bootstrap.dart
   features/
     auth/
+      domain/
+      data/
       presentation/
     home/
       presentation/
@@ -46,8 +49,11 @@ lib/
 - `lib/engine/src/shell`: EngineShell, FeatureShell 같은 shell UI 계약을 가진다.
 - `lib/ui_kit/`: 여러 app에서 재사용 가능한 UI token과 widget을 가진다.
 - `lib/app/`: 이 앱의 composition root이자 유일한 app 설정 지점을 가진다.
+- `lib/app/app_bootstrap.dart`: app 설정을 소비해 runtime host를 조립한다. source of truth는 아니다.
 - `lib/features/`: vertical slice로 구성된 Feature module을 가진다.
 - `lib/features/**/presentation`: Feature UI와 presentation state를 가진다.
+- `lib/features/**/domain`: Feature 계약, entity, error/result를 가진다.
+- `lib/features/**/data`: repository 구현, datasource, 외부 SDK 연동을 가진다.
 
 ## app 설정 파일
 

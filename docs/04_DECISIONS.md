@@ -20,3 +20,11 @@
 - 2026-03-26: Navigation sync는 microtask, post-frame 우회가 아니라 observer 기반 단일 흐름으로 정리한다.
 - 2026-03-26: placeholder shell은 실제 EngineShell 도입 이후 제거한다.
 - 2026-03-26: Phase 2에서는 Firebase, auth redirect, Result/AppError 본구현을 의도적으로 제외한다.
+
+- 2026-03-27: Phase 3에서는 `Firebase.initializeApp()` bootstrap을 app plugin에서 수행한다.
+- 2026-03-27: auth redirect는 app layer 함수로 정의하고 RouterEngine에는 `redirect`와 `refreshListenable`만 주입한다.
+- 2026-03-27: auth session은 `FirebaseUser`가 아니라 `AuthSession` provider로만 외부에 노출한다.
+- 2026-03-27: login 성공 정의는 `FirebaseAuth 성공 + users/{uid} upsert 성공`이다.
+- 2026-03-27: `users/{uid}` upsert는 repository 내부에서만 호출하고 `DocumentReference.get() -> set/update` 방식으로 고정한다.
+- 2026-03-27: users upsert 실패 시 repository 내부에서 rollback signOut을 시도하고 실패 여부와 무관하게 login은 실패로 닫는다.
+- 2026-03-27: `AppError`, `Result<T>`, logger는 auth slice 내부의 임시 generic core로 구현하고 shared core로 간주하지 않는다.

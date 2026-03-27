@@ -28,6 +28,8 @@ class RouterEngine {
     required this.initialLocation,
     required this.shellConfig,
     required this.navigationNotifier,
+    this.redirect,
+    this.refreshListenable,
   });
 
   final List<RouteDef> routes;
@@ -37,6 +39,10 @@ class RouterEngine {
   final EngineShellConfig shellConfig;
 
   final NavigationStateNotifier navigationNotifier;
+
+  final GoRouterRedirect? redirect;
+
+  final Listenable? refreshListenable;
 
   late final List<RouteDef> _flatRoutes = _flattenRouteTrees(routes);
   GoRouter? _router;
@@ -61,6 +67,8 @@ class RouterEngine {
 
     final router = GoRouter(
       initialLocation: initialLocation,
+      redirect: redirect,
+      refreshListenable: refreshListenable,
       observers: <NavigatorObserver>[rootObserver],
       routes: <RouteBase>[
         if (shellRouteTrees.isNotEmpty)
