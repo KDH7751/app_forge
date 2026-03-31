@@ -1,4 +1,4 @@
-package com.example.app_forge
+package com.silversr.appforge
 
 import io.flutter.embedding.android.FlutterActivity
 
