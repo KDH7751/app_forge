@@ -31,5 +31,14 @@
 - 2026-03-27: runtime bootstrap host는 `lib/bootstrap/bootstrap.dart`로 두고, app 설정은 계속 `app_config.dart`, `app_plugins.dart`, `app_features.dart` 3파일만 source of truth로 유지한다.
 - 2026-03-27: engine 내부의 bootstrap 개념은 `plugins`로 rename하고 public engine surface는 이를 export한다.
 - 2026-03-27: auth feature는 UI page를 소유하지 않고 provider/controller 같은 presentation layer만 가진다.
-- 2026-03-27: login page는 별도 login feature로 분리하고 auth 기능을 소비만 한다.
+- 2026-03-27: login page는 별도 UI feature로 분리하고 auth 기능을 소비만 한다.
 - 2026-03-27: feature는 필요한 layer만 가진다. `domain/data/presentation`을 모두 강제하지 않는다.
+
+- 2026-03-31: Phase 3.5에서는 auth 기능을 login/signup/logout/reset + validation 규칙까지 확장한다.
+- 2026-03-31: auth feature는 action/validation/session model을 소유하고, auth_entry feature는 login/signup/reset UI와 form controller를 소유한다.
+- 2026-03-31: `AuthRepository`는 session stream을 노출하지 않고 action/validation contract만 가진다.
+- 2026-03-31: auth session 관찰은 `auth_session_provider`가 FirebaseAuth 기반 별도 provider로 소유한다.
+- 2026-03-31: `/login`, `/signup`, `/reset-password`는 모두 `useShell: false` standalone public route로 고정한다.
+- 2026-03-31: signup 성공 정의는 `createUser + users/{uid} upsert 성공`이며, upsert 실패 시 rollback signOut을 시도하고 signup을 실패로 닫는다.
+- 2026-03-31: signup의 `users/{uid}` upsert는 `DocumentReference.get() -> set/update` 방식으로만 수행하고 `createdAt`은 최초 생성 시에만 기록한다.
+- 2026-03-31: validation은 auth가 `Result<void>`와 `AppError`로 정의하고, auth_entry는 표시와 navigation timing만 소유한다.

@@ -12,7 +12,7 @@ Feature를 추가하는 방식으로 확장할 수 있어야 한다.
 
 ## 현재 상태
 
-현재 Phase 3까지 완료되었다.
+현재 Phase 3.5까지 완료되었다.
 
 구현된 범위:
 
@@ -23,13 +23,16 @@ Feature를 추가하는 방식으로 확장할 수 있어야 한다.
 - `EngineShell`
 - `FeatureShell`
 - `Firebase.initializeApp()` bootstrap 진입
-- 이메일/비밀번호 login / logout
+- 이메일/비밀번호 login / signup / logout / reset
 - `AuthSession` provider
 - app layer auth redirect
 - `users/{uid}` upsert 보장
 - auth 내부 최소 `AppError` / `Result<T>` / logger
+- `auth_entry` form UI / controller 구조
 - 검증 라우트
   - `/login`
+  - `/signup`
+  - `/reset-password`
   - `/home`
   - `/profile`
   - `/posts/:id`
@@ -71,7 +74,7 @@ app 설정은 아래 3개 파일에서만 수행한다.
 - app은 Engine, Plugin, Feature를 조립하는 composition root다.
 - 각 Feature는 vertical slice로 확장되어야 한다.
 - Feature는 필요한 layer만 가진다. 빈 `domain/`, `data/` 폴더를 강제하지 않는다.
-- auth의 presentation은 provider/controller layer를 뜻하며, login page는 별도 login feature가 소유한다.
+- auth의 presentation은 provider/controller layer를 뜻하며, login/signup/reset page는 별도 auth_entry feature가 소유한다.
 
 ## 현재 범위에 포함되지 않는 것
 
@@ -79,7 +82,6 @@ app 설정은 아래 3개 파일에서만 수행한다.
 
 - shell 고급 커스터마이징
 - route transition / analytics 확장
-- 회원가입 / 비밀번호 재설정
 - role/status 기반 접근 제어
 - 소셜 로그인
 - shared error / logger core 승격

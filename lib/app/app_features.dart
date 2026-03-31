@@ -13,8 +13,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:app_forge/engine/engine.dart';
+import 'package:app_forge/features/auth_entry/presentation/auth_entry_notice.dart';
+import 'package:app_forge/features/auth_entry/presentation/pages/login_page.dart';
+import 'package:app_forge/features/auth_entry/presentation/pages/reset_password_page.dart';
+import 'package:app_forge/features/auth_entry/presentation/pages/signup_page.dart';
 import '../features/home/presentation/home_page.dart';
-import '../features/login/presentation/login_page.dart';
 import '../features/posts/presentation/post_detail_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 
@@ -24,7 +27,7 @@ enum AppAuthRedirectStatus { unknown, authenticated, unauthenticated }
 /// app 활성 Feature 등록 목록.
 final appFeatures = <EngineFeature>[
   EngineFeature(
-    key: 'auth',
+    key: 'auth_entry',
     routes: <RouteDef>[
       RouteDef(
         path: '/login',
@@ -32,7 +35,27 @@ final appFeatures = <EngineFeature>[
         label: 'Login',
         useShell: false,
         showAppBar: false,
-        builder: (_, __) => const LoginPage(),
+        builder: (_, state) => LoginPage(
+          notice: state.extra is AuthEntryNotice
+              ? state.extra! as AuthEntryNotice
+              : null,
+        ),
+      ),
+      RouteDef(
+        path: '/signup',
+        name: 'signup',
+        label: 'Sign Up',
+        useShell: false,
+        showAppBar: false,
+        builder: (_, __) => const SignupPage(),
+      ),
+      RouteDef(
+        path: '/reset-password',
+        name: 'resetPassword',
+        label: 'Reset Password',
+        useShell: false,
+        showAppBar: false,
+        builder: (_, __) => const ResetPasswordPage(),
       ),
     ],
   ),
@@ -108,13 +131,22 @@ String? resolveAppRedirect({
   }
 
   final normalizedLocation = normalizeLocationPath(location);
-  final isLoginRoute = normalizedLocation == '/login';
+  const publicAuthEntryRoutes = <String>{
+    '/login',
+    '/signup',
+    '/reset-password',
+  };
+  final isPublicAuthEntryRoute = publicAuthEntryRoutes.contains(
+    normalizedLocation,
+  );
 
-  if (authStatus == AppAuthRedirectStatus.unauthenticated && !isLoginRoute) {
+  if (authStatus == AppAuthRedirectStatus.unauthenticated &&
+      !isPublicAuthEntryRoute) {
     return '/login';
   }
 
-  if (authStatus == AppAuthRedirectStatus.authenticated && isLoginRoute) {
+  if (authStatus == AppAuthRedirectStatus.authenticated &&
+      isPublicAuthEntryRoute) {
     return '/home';
   }
 

@@ -1,39 +1,74 @@
-/// auth slice 내부 임시 generic core AppError category.
-enum AppErrorCategory { auth, permission, notFound, network, parsing, unknown }
+/// auth slice가 외부에 노출하는 최소 에러 타입.
+enum AppErrorType {
+  userNotFound,
+  wrongPassword,
+  emailAlreadyInUse,
+  weakPassword,
+  invalidEmail,
+  invalidPassword,
+  passwordMismatch,
+  network,
+  unknown,
+}
 
 /// auth slice 내부 임시 generic core AppError 모델.
 class AppError {
-  const AppError({required this.category, required this.message, this.code});
+  const AppError({required this.type, this.code});
 
-  final AppErrorCategory category;
-  final String message;
+  final AppErrorType type;
   final String? code;
 
   /// 사용자를 찾을 수 없음.
   static const AppError userNotFound = AppError(
-    category: AppErrorCategory.auth,
+    type: AppErrorType.userNotFound,
     code: 'user-not-found',
-    message: '사용자를 찾을 수 없습니다',
   );
 
   /// 비밀번호 불일치.
   static const AppError wrongPassword = AppError(
-    category: AppErrorCategory.auth,
+    type: AppErrorType.wrongPassword,
     code: 'wrong-password',
-    message: '비밀번호가 올바르지 않습니다',
+  );
+
+  /// 이미 사용 중인 이메일.
+  static const AppError emailAlreadyInUse = AppError(
+    type: AppErrorType.emailAlreadyInUse,
+    code: 'email-already-in-use',
+  );
+
+  /// Firebase 약한 비밀번호.
+  static const AppError weakPassword = AppError(
+    type: AppErrorType.weakPassword,
+    code: 'weak-password',
+  );
+
+  /// 이메일 형식 오류.
+  static const AppError invalidEmail = AppError(
+    type: AppErrorType.invalidEmail,
+    code: 'invalid-email',
+  );
+
+  /// 비밀번호 validation 오류.
+  static const AppError invalidPassword = AppError(
+    type: AppErrorType.invalidPassword,
+    code: 'invalid-password',
+  );
+
+  /// 비밀번호 확인 불일치.
+  static const AppError passwordMismatch = AppError(
+    type: AppErrorType.passwordMismatch,
+    code: 'password-mismatch',
   );
 
   /// 네트워크 문제.
   static const AppError network = AppError(
-    category: AppErrorCategory.network,
+    type: AppErrorType.network,
     code: 'network',
-    message: '네트워크 문제로 로그인할 수 없습니다',
   );
 
-  /// 일반 로그인 실패.
-  static const AppError loginFailed = AppError(
-    category: AppErrorCategory.unknown,
-    code: 'login-failed',
-    message: '로그인에 실패했습니다. 다시 시도해주세요',
+  /// 일반 실패.
+  static const AppError unknown = AppError(
+    type: AppErrorType.unknown,
+    code: 'unknown',
   );
 }

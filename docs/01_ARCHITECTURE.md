@@ -33,7 +33,7 @@ lib/
       domain/
       data/
       presentation/
-    login/
+    auth_entry/
       presentation/
     home/
       presentation/
@@ -99,13 +99,13 @@ app 설정 파일 수를 늘리는 예외가 아니다.
 
 이 구조는 Engine의 재사용성을 유지하고, 제품 도메인 policy가 Engine 안으로 새는 것을 막는다.
 
-## auth / login 분리
+## auth / auth_entry 분리
 
 - auth feature는 순수 기능 feature다.
 - auth는 UI page를 소유하지 않는다.
 - auth의 `presentation`은 widget page가 아니라 provider/controller layer를 의미한다.
-- login feature는 auth 기능을 소비만 한다.
-- login feature는 auth provider/controller를 사용하되 auth 계약이나 구현을 재정의하거나 복제하지 않는다.
+- auth_entry feature는 auth 기능을 소비만 한다.
+- auth_entry feature는 auth provider를 사용하되 auth 계약이나 구현을 재정의하거나 복제하지 않는다.
 
 ## public Engine surface
 

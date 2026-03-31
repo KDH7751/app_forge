@@ -1,55 +1,70 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_forge/bootstrap/bootstrap.dart';
+import 'package:app_forge/features/auth/domain/app_error.dart';
 import 'package:app_forge/features/auth/domain/auth_repository.dart';
 import 'package:app_forge/features/auth/domain/auth_session.dart';
 import 'package:app_forge/features/auth/domain/result.dart';
 import 'package:app_forge/features/auth/presentation/auth_repository_provider.dart';
+import 'package:app_forge/features/auth/presentation/auth_session_provider.dart';
 
-/// router shell 동작 검증용 widget test 묶음.
+/// router shell / auth_entry 흐름 검증용 widget test 묶음.
 void main() {
   testWidgets('unauthenticated app redirects to login route', (tester) async {
-    final repository = _FakeAuthRepository();
-    addTearDown(repository.dispose);
+    final sessionSource = _FakeAuthSessionSource();
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
 
-    await tester.pumpWidget(
-      Bootstrap(
-        overrides: <Override>[
-          authRepositoryProvider.overrideWithValue(repository),
-        ],
-      ),
-    );
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
     await tester.pumpAndSettle();
 
     expect(find.text('Email'), findsOneWidget);
     expect(
-      find.text('Standalone route outside the Engine shell.'),
+      find.text('Standalone auth entry route outside the Engine shell.'),
       findsOneWidget,
     );
     expect(find.byType(AppBar), findsNothing);
     expect(find.byType(NavigationBar), findsNothing);
   });
 
+  testWidgets('login page pushes to signup route and back works', (
+    tester,
+  ) async {
+    final sessionSource = _FakeAuthSessionSource();
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
+
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign Up'), findsOneWidget);
+    expect(find.byType(AppBar), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(FilledButton, 'Login'), findsOneWidget);
+    expect(find.text('Create account'), findsOneWidget);
+  });
+
   testWidgets('authenticated app renders shell home route', (tester) async {
-    final repository = _FakeAuthRepository(
+    final sessionSource = _FakeAuthSessionSource(
       initialSession: const AuthSession(
         uid: 'uid-1',
         email: 'user@example.com',
       ),
     );
-    addTearDown(repository.dispose);
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
 
-    await tester.pumpWidget(
-      Bootstrap(
-        overrides: <Override>[
-          authRepositoryProvider.overrideWithValue(repository),
-        ],
-      ),
-    );
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
     await tester.pumpAndSettle();
 
     expect(find.text('Phase 2 Home Route'), findsOneWidget);
@@ -60,21 +75,16 @@ void main() {
   testWidgets('authenticated bottom nav moves from home to profile route', (
     tester,
   ) async {
-    final repository = _FakeAuthRepository(
+    final sessionSource = _FakeAuthSessionSource(
       initialSession: const AuthSession(
         uid: 'uid-1',
         email: 'user@example.com',
       ),
     );
-    addTearDown(repository.dispose);
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
 
-    await tester.pumpWidget(
-      Bootstrap(
-        overrides: <Override>[
-          authRepositoryProvider.overrideWithValue(repository),
-        ],
-      ),
-    );
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.person_outline));
@@ -91,21 +101,41 @@ void main() {
   testWidgets('login page submits and redirect moves to home route', (
     tester,
   ) async {
-    final repository = _FakeAuthRepository();
-    addTearDown(repository.dispose);
+    final sessionSource = _FakeAuthSessionSource();
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
 
-    await tester.pumpWidget(
-      Bootstrap(
-        overrides: <Override>[
-          authRepositoryProvider.overrideWithValue(repository),
-        ],
-      ),
-    );
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
     await tester.enterText(find.byType(TextField).at(1), 'password123');
+    await tester.pump();
     await tester.tap(find.widgetWithText(FilledButton, 'Login'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Phase 2 Home Route'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+  });
+
+  testWidgets('signup page submits and redirect moves to home route', (
+    tester,
+  ) async {
+    final sessionSource = _FakeAuthSessionSource();
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
+
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), 'new@example.com');
+    await tester.enterText(find.byType(TextField).at(1), 'password123');
+    await tester.enterText(find.byType(TextField).at(2), 'password123');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
     await tester.pumpAndSettle();
 
     expect(find.text('Phase 2 Home Route'), findsOneWidget);
@@ -115,21 +145,16 @@ void main() {
   testWidgets(
     'authenticated home page button navigates to param detail route',
     (tester) async {
-      final repository = _FakeAuthRepository(
+      final sessionSource = _FakeAuthSessionSource(
         initialSession: const AuthSession(
           uid: 'uid-1',
           email: 'user@example.com',
         ),
       );
-      addTearDown(repository.dispose);
+      final repository = _FakeAuthRepository(sessionSource: sessionSource);
+      addTearDown(sessionSource.dispose);
 
-      await tester.pumpWidget(
-        Bootstrap(
-          overrides: <Override>[
-            authRepositoryProvider.overrideWithValue(repository),
-          ],
-        ),
-      );
+      await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Post 42'));
@@ -143,21 +168,16 @@ void main() {
   );
 
   testWidgets('profile logout redirects back to login route', (tester) async {
-    final repository = _FakeAuthRepository(
+    final sessionSource = _FakeAuthSessionSource(
       initialSession: const AuthSession(
         uid: 'uid-1',
         email: 'user@example.com',
       ),
     );
-    addTearDown(repository.dispose);
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
 
-    await tester.pumpWidget(
-      Bootstrap(
-        overrides: <Override>[
-          authRepositoryProvider.overrideWithValue(repository),
-        ],
-      ),
-    );
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.person_outline));
@@ -169,48 +189,155 @@ void main() {
     expect(find.byType(AppBar), findsNothing);
     expect(find.byType(NavigationBar), findsNothing);
   });
+
+  testWidgets('reset password success returns to login route', (tester) async {
+    final sessionSource = _FakeAuthSessionSource();
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
+
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Reset password'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reset Password'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).first, 'user@example.com');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Send reset email'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(FilledButton, 'Login'), findsOneWidget);
+    expect(find.text('Create account'), findsOneWidget);
+    expect(find.text('비밀번호 재설정 메일을 전송했습니다'), findsOneWidget);
+  });
+}
+
+Bootstrap _buildBootstrap(
+  _FakeAuthRepository repository,
+  _FakeAuthSessionSource sessionSource,
+) {
+  return Bootstrap(
+    overrides: <Override>[
+      authRepositoryProvider.overrideWithValue(repository),
+      authSessionStreamProvider.overrideWithValue(sessionSource.stream),
+    ],
+  );
+}
+
+class _FakeAuthSessionSource {
+  _FakeAuthSessionSource({AuthSession? initialSession})
+    : _currentSession = initialSession;
+
+  final StreamController<AuthSession?> _controller =
+      StreamController<AuthSession?>.broadcast();
+  AuthSession? _currentSession;
+
+  Stream<AuthSession?> get stream async* {
+    yield _currentSession;
+    yield* _controller.stream;
+  }
+
+  void setSession(AuthSession? session) {
+    _currentSession = session;
+    _controller.add(session);
+  }
+
+  Future<void> dispose() async {
+    await _controller.close();
+  }
 }
 
 class _FakeAuthRepository implements AuthRepository {
-  _FakeAuthRepository({AuthSession? initialSession})
-    : _currentSession = initialSession,
-      _controller = StreamController<AuthSession?>.broadcast();
+  _FakeAuthRepository({required _FakeAuthSessionSource sessionSource})
+    : _sessionSource = sessionSource;
 
-  final StreamController<AuthSession?> _controller;
-  AuthSession? _currentSession;
+  final _FakeAuthSessionSource _sessionSource;
 
   @override
-  AuthSession? currentSession() {
-    return _currentSession;
-  }
-
-  @override
-  Future<Result<AuthSession>> login({
+  Future<Result<void>> login({
     required String email,
     required String password,
   }) async {
-    final session = AuthSession(uid: 'uid-1', email: email);
-    _currentSession = session;
-    _controller.add(session);
-
-    return Result<AuthSession>.success(session);
-  }
-
-  @override
-  Future<Result<void>> logout() async {
-    _currentSession = null;
-    _controller.add(null);
+    _sessionSource.setSession(AuthSession(uid: 'uid-1', email: email));
 
     return const Result<void>.success(null);
   }
 
   @override
-  Stream<AuthSession?> watchSession() async* {
-    yield _currentSession;
-    yield* _controller.stream;
+  Future<Result<void>> signup({
+    required String email,
+    required String password,
+  }) async {
+    _sessionSource.setSession(AuthSession(uid: 'uid-2', email: email));
+
+    return const Result<void>.success(null);
   }
 
-  Future<void> dispose() async {
-    await _controller.close();
+  @override
+  Future<Result<void>> logout() async {
+    _sessionSource.setSession(null);
+
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<void>> sendPasswordResetEmail({required String email}) async {
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Result<void> validateLogin({
+    required String email,
+    required String password,
+  }) {
+    if (!_isValidEmail(email)) {
+      return const Result<void>.failure(AppError.invalidEmail);
+    }
+
+    if (!_isValidPassword(password)) {
+      return const Result<void>.failure(AppError.invalidPassword);
+    }
+
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Result<void> validateSignup({
+    required String email,
+    required String password,
+    required String confirmPassword,
+  }) {
+    if (!_isValidEmail(email)) {
+      return const Result<void>.failure(AppError.invalidEmail);
+    }
+
+    if (!_isValidPassword(password)) {
+      return const Result<void>.failure(AppError.invalidPassword);
+    }
+
+    if (password != confirmPassword) {
+      return const Result<void>.failure(AppError.passwordMismatch);
+    }
+
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Result<void> validateReset({required String email}) {
+    if (!_isValidEmail(email)) {
+      return const Result<void>.failure(AppError.invalidEmail);
+    }
+
+    return const Result<void>.success(null);
+  }
+
+  bool _isValidEmail(String email) {
+    return email.contains('@');
+  }
+
+  bool _isValidPassword(String password) {
+    return password.length >= 8;
   }
 }
