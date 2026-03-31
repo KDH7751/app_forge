@@ -74,7 +74,8 @@ app 설정은 아래 3개 파일에서만 수행한다.
 - app은 Engine, Plugin, Feature를 조립하는 composition root다.
 - 각 Feature는 vertical slice로 확장되어야 한다.
 - Feature는 필요한 layer만 가진다. 빈 `domain/`, `data/` 폴더를 강제하지 않는다.
-- auth의 presentation은 provider/controller layer를 뜻하며, login/signup/reset page는 별도 auth_entry feature가 소유한다.
+- Feature 내부 기본 구조는 `ui/state/data/domain` 규칙을 따른다.
+- auth의 state는 provider/controller를 뜻하며, login/signup/reset page는 별도 auth_entry feature의 ui가 소유한다.
 
 ## 현재 범위에 포함되지 않는 것
 

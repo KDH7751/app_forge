@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../auth/domain/app_error.dart';
-import '../../../auth/domain/result.dart';
-import '../../../auth/presentation/auth_repository_provider.dart';
+import '../../auth/domain/app_error.dart';
+import '../../auth/domain/result.dart';
+import '../../auth/state/auth_repository_provider.dart';
 
 /// reset form controller provider.
 final resetControllerProvider =

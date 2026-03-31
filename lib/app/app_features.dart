@@ -13,13 +13,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:app_forge/engine/engine.dart';
-import 'package:app_forge/features/auth_entry/presentation/auth_entry_notice.dart';
-import 'package:app_forge/features/auth_entry/presentation/pages/login_page.dart';
-import 'package:app_forge/features/auth_entry/presentation/pages/reset_password_page.dart';
-import 'package:app_forge/features/auth_entry/presentation/pages/signup_page.dart';
-import '../features/home/presentation/home_page.dart';
-import '../features/posts/presentation/post_detail_page.dart';
-import '../features/profile/presentation/profile_page.dart';
+import 'package:app_forge/features/auth_entry/state/auth_entry_notice.dart';
+import 'package:app_forge/features/auth_entry/ui/login_page.dart';
+import 'package:app_forge/features/auth_entry/ui/reset_password_page.dart';
+import 'package:app_forge/features/auth_entry/ui/signup_page.dart';
+import '../features/home/ui/home_page.dart';
+import '../features/posts/ui/post_detail_page.dart';
+import '../features/profile/ui/profile_page.dart';
 
 /// app redirect 판단용 최소 auth 상태.
 enum AppAuthRedirectStatus { unknown, authenticated, unauthenticated }

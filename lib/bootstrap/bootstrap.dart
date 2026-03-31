@@ -19,7 +19,7 @@ import 'package:app_forge/engine/engine.dart';
 import '../app/app_config.dart';
 import '../app/app_features.dart';
 import '../features/auth/domain/auth_session.dart';
-import '../features/auth/presentation/auth_session_provider.dart';
+import '../features/auth/state/auth_session_provider.dart';
 
 /// runtime bootstrap host widget.
 class Bootstrap extends StatefulWidget {

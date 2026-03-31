@@ -2,21 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../auth/domain/app_error.dart';
-import '../auth_entry_error_mapper.dart';
-import '../controllers/signup_controller.dart';
+import '../state/auth_entry_error_mapper.dart';
+import '../state/auth_entry_notice.dart';
+import '../state/reset_controller.dart';
 
-/// auth_entry signup page.
-class SignupPage extends ConsumerWidget {
-  const SignupPage({super.key});
+/// auth_entry reset password page.
+class ResetPasswordPage extends ConsumerStatefulWidget {
+  const ResetPasswordPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(signupControllerProvider);
-    final controller = ref.read(signupControllerProvider.notifier);
+  ConsumerState<ResetPasswordPage> createState() => _ResetPasswordPageState();
+}
+
+class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
+  ProviderSubscription<ResetControllerState>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _subscription = ref.listenManual<ResetControllerState>(
+      resetControllerProvider,
+      (previous, next) {
+        if (previous?.isSuccess == true || !next.isSuccess) {
+          return;
+        }
+
+        if (!mounted) {
+          return;
+        }
+
+        context.go(
+          '/login',
+          extra: const AuthEntryNotice.resetPasswordSuccess(),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription?.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(resetControllerProvider);
+    final controller = ref.read(resetControllerProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
+      appBar: AppBar(title: const Text('Reset Password')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -29,41 +65,18 @@ class SignupPage extends ConsumerWidget {
                 TextField(
                   enabled: !state.isLoading,
                   onChanged: controller.updateEmail,
-                  autofillHints: const <String>[AutofillHints.newUsername],
                   keyboardType: TextInputType.emailAddress,
+                  autofillHints: const <String>[AutofillHints.username],
                   decoration: InputDecoration(
                     labelText: 'Email',
                     border: const OutlineInputBorder(),
-                    errorText: _mapFieldError(state.emailError),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  enabled: !state.isLoading,
-                  onChanged: controller.updatePassword,
-                  obscureText: true,
-                  autofillHints: const <String>[AutofillHints.newPassword],
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: const OutlineInputBorder(),
-                    errorText: _mapFieldError(state.passwordError),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  enabled: !state.isLoading,
-                  onChanged: controller.updateConfirmPassword,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm password',
-                    border: const OutlineInputBorder(),
-                    errorText: _mapFieldError(state.confirmPasswordError),
+                    errorText: mapAuthEntryErrorText(state.emailError),
                   ),
                 ),
                 if (state.serverError != null) ...<Widget>[
                   const SizedBox(height: 12),
                   Text(
-                    mapAuthEntryError(state.serverError!),
+                    mapAuthEntryErrorText(state.serverError)!,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -83,7 +96,7 @@ class SignupPage extends ConsumerWidget {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Create account'),
+                      : const Text('Send reset email'),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
@@ -100,13 +113,5 @@ class SignupPage extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  String? _mapFieldError(AppError? error) {
-    if (error == null) {
-      return null;
-    }
-
-    return mapAuthEntryError(error);
   }
 }

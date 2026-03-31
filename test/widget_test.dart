@@ -9,8 +9,8 @@ import 'package:app_forge/features/auth/domain/app_error.dart';
 import 'package:app_forge/features/auth/domain/auth_repository.dart';
 import 'package:app_forge/features/auth/domain/auth_session.dart';
 import 'package:app_forge/features/auth/domain/result.dart';
-import 'package:app_forge/features/auth/presentation/auth_repository_provider.dart';
-import 'package:app_forge/features/auth/presentation/auth_session_provider.dart';
+import 'package:app_forge/features/auth/state/auth_repository_provider.dart';
+import 'package:app_forge/features/auth/state/auth_session_provider.dart';
 
 /// router shell / auth_entry 흐름 검증용 widget test 묶음.
 void main() {

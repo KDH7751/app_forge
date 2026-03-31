@@ -6,7 +6,10 @@ abstract interface class AuthRepository {
   Future<Result<void>> login({required String email, required String password});
 
   /// 이메일/비밀번호 signup 수행.
-  Future<Result<void>> signup({required String email, required String password});
+  Future<Result<void>> signup({
+    required String email,
+    required String password,
+  });
 
   /// 현재 세션 logout 수행.
   Future<Result<void>> logout();

@@ -1,65 +1,79 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../auth/domain/app_error.dart';
-import '../../../auth/domain/result.dart';
-import '../../../auth/presentation/auth_repository_provider.dart';
+import '../../auth/domain/app_error.dart';
+import '../../auth/domain/result.dart';
+import '../../auth/state/auth_repository_provider.dart';
 
-/// login form controller provider.
-final loginControllerProvider =
-    AutoDisposeNotifierProvider<LoginController, LoginControllerState>(
-      LoginController.new,
+/// signup form controller provider.
+final signupControllerProvider =
+    AutoDisposeNotifierProvider<SignupController, SignupControllerState>(
+      SignupController.new,
     );
 
-/// login form 상태.
-class LoginControllerState {
-  const LoginControllerState({
+/// signup form 상태.
+class SignupControllerState {
+  const SignupControllerState({
     this.email = '',
     this.password = '',
+    this.confirmPassword = '',
     this.emailError,
     this.passwordError,
+    this.confirmPasswordError,
     this.serverError,
     this.isLoading = false,
   });
 
   final String email;
   final String password;
+  final String confirmPassword;
   final AppError? emailError;
   final AppError? passwordError;
+  final AppError? confirmPasswordError;
   final AppError? serverError;
   final bool isLoading;
 
   bool get canSubmit =>
-      !isLoading && email.trim().isNotEmpty && password.isNotEmpty;
+      !isLoading &&
+      email.trim().isNotEmpty &&
+      password.isNotEmpty &&
+      confirmPassword.isNotEmpty;
 
-  LoginControllerState copyWith({
+  SignupControllerState copyWith({
     String? email,
     String? password,
+    String? confirmPassword,
     AppError? emailError,
     AppError? passwordError,
+    AppError? confirmPasswordError,
     AppError? serverError,
     bool? isLoading,
     bool clearEmailError = false,
     bool clearPasswordError = false,
+    bool clearConfirmPasswordError = false,
     bool clearServerError = false,
   }) {
-    return LoginControllerState(
+    return SignupControllerState(
       email: email ?? this.email,
       password: password ?? this.password,
+      confirmPassword: confirmPassword ?? this.confirmPassword,
       emailError: clearEmailError ? null : (emailError ?? this.emailError),
       passwordError: clearPasswordError
           ? null
           : (passwordError ?? this.passwordError),
+      confirmPasswordError: clearConfirmPasswordError
+          ? null
+          : (confirmPasswordError ?? this.confirmPasswordError),
       serverError: clearServerError ? null : (serverError ?? this.serverError),
       isLoading: isLoading ?? this.isLoading,
     );
   }
 }
 
-/// login submit 흐름 controller.
-class LoginController extends AutoDisposeNotifier<LoginControllerState> {
+/// signup submit 흐름 controller.
+class SignupController extends AutoDisposeNotifier<SignupControllerState> {
   @override
-  LoginControllerState build() {
-    return const LoginControllerState();
+  SignupControllerState build() {
+    return const SignupControllerState();
   }
 
   void updateEmail(String email) {
@@ -78,15 +92,28 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
     );
   }
 
+  void updateConfirmPassword(String confirmPassword) {
+    state = state.copyWith(
+      confirmPassword: confirmPassword,
+      clearConfirmPasswordError: true,
+      clearServerError: true,
+    );
+  }
+
   Future<Result<void>> submit() async {
     final validation = ref
         .read(authRepositoryProvider)
-        .validateLogin(email: state.email, password: state.password);
+        .validateSignup(
+          email: state.email,
+          password: state.password,
+          confirmPassword: state.confirmPassword,
+        );
 
     if (validation case Failure<void>(error: final error)) {
       state = state.copyWith(
         emailError: _emailErrorFor(error),
         passwordError: _passwordErrorFor(error),
+        confirmPasswordError: _confirmPasswordErrorFor(error),
         clearServerError: true,
       );
 
@@ -97,12 +124,13 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
       isLoading: true,
       clearEmailError: true,
       clearPasswordError: true,
+      clearConfirmPasswordError: true,
       clearServerError: true,
     );
 
     final result = await ref
         .read(authRepositoryProvider)
-        .login(email: state.email.trim(), password: state.password);
+        .signup(email: state.email.trim(), password: state.password);
 
     if (result case Failure<void>(error: final error)) {
       state = state.copyWith(isLoading: false, serverError: error);
@@ -123,6 +151,13 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
   AppError? _passwordErrorFor(AppError error) {
     return switch (error.type) {
       AppErrorType.invalidPassword => error,
+      _ => null,
+    };
+  }
+
+  AppError? _confirmPasswordErrorFor(AppError error) {
+    return switch (error.type) {
+      AppErrorType.passwordMismatch => error,
       _ => null,
     };
   }

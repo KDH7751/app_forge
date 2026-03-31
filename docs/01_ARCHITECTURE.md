@@ -32,17 +32,18 @@ lib/
     auth/
       domain/
       data/
-      presentation/
+      state/
     auth_entry/
-      presentation/
+      ui/
+      state/
     home/
-      presentation/
+      ui/
     profile/
-      presentation/
+      ui/
     posts/
-      presentation/
+      ui/
     settings/
-      presentation/
+      ui/
   ui_kit/
 ```
 
@@ -56,7 +57,8 @@ lib/
 - `lib/ui_kit/`: 여러 app에서 재사용 가능한 UI token과 widget을 가진다.
 - `lib/app/`: 이 앱의 composition root이자 유일한 app 설정 지점을 가진다.
 - `lib/features/`: vertical slice로 구성된 Feature module을 가진다.
-- `lib/features/**/presentation`: Feature별 UI 또는 provider/controller 같은 presentation state를 가진다.
+- `lib/features/**/ui`: page, widget, layout 같은 화면 렌더링 코드를 가진다.
+- `lib/features/**/state`: controller, provider, mapper, notice 같은 UI 상태와 흐름 코드를 가진다.
 - `lib/features/**/domain`: 필요한 경우 Feature 계약, entity, error/result를 가진다.
 - `lib/features/**/data`: 필요한 경우 repository 구현, datasource, 외부 SDK 연동을 가진다.
 
@@ -80,7 +82,8 @@ app 설정 파일 수를 늘리는 예외가 아니다.
 - `lib/features/**` -> `package:app_forge/engine/engine.dart`
 - `lib/app/**` -> `package:app_forge/engine/engine.dart`
 - `lib/app/**` -> `lib/features/**`
-- 같은 slice 내부의 presentation -> domain/data
+- 같은 slice 내부의 `ui -> state`
+- 같은 slice 내부의 `state -> data/domain`
 
 금지:
 
@@ -99,13 +102,26 @@ app 설정 파일 수를 늘리는 예외가 아니다.
 
 이 구조는 Engine의 재사용성을 유지하고, 제품 도메인 policy가 Engine 안으로 새는 것을 막는다.
 
+## Feature 내부 구조
+
+Feature는 UI 중심 구조를 따른다.
+
+기존 domain/data/presentation 구조 대신, 다음 구조를 사용한다.
+
+- `ui`: 화면 렌더링
+- `state`: UI 상태 및 흐름 제어
+- `data`: 외부 시스템 접근
+- `domain`: 계약, entity, error/result 같은 선택 레이어
+
+이 구조는 `presentation` 레이어에 UI와 상태가 혼합되는 문제를 방지하기 위해 도입되었다.
+
 ## auth / auth_entry 분리
 
 - auth feature는 순수 기능 feature다.
 - auth는 UI page를 소유하지 않는다.
-- auth의 `presentation`은 widget page가 아니라 provider/controller layer를 의미한다.
+- auth의 `state`는 provider/controller layer를 의미한다.
 - auth_entry feature는 auth 기능을 소비만 한다.
-- auth_entry feature는 auth provider를 사용하되 auth 계약이나 구현을 재정의하거나 복제하지 않는다.
+- auth_entry feature는 auth state를 사용하되 auth 계약이나 구현을 재정의하거나 복제하지 않는다.
 
 ## public Engine surface
 

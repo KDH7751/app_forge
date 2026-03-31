@@ -14,3 +14,12 @@ String mapAuthEntryError(AppError error) {
     AppErrorType.unknown => '요청을 처리할 수 없습니다. 다시 시도해주세요',
   };
 }
+
+/// auth_entry에서 사용하는 nullable 에러 문구 매퍼.
+String? mapAuthEntryErrorText(Object? error) {
+  if (error is! AppError) {
+    return null;
+  }
+
+  return mapAuthEntryError(error);
+}

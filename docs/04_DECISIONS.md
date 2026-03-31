@@ -2,7 +2,7 @@
 
 - 2026-03-23: Engine은 policy, flow, abstraction을 소유하고 concrete 구현은 재사용성을 위해 app이 주입한다.
 - 2026-03-23: app은 Engine, Plugin, Feature를 조립하는 composition root다.
-- 2026-03-23: Feature는 domain, data, presentation을 함께 가지는 vertical slice로 유지한다.
+- 2026-03-23: Feature는 ui, state, data, domain을 필요에 따라 가지는 vertical slice로 유지한다.
 - 2026-03-23: app과 Feature의 유일한 public Engine import 경로는 `package:app_forge/engine/engine.dart`다.
 - 2026-03-23: Phase 1에서는 placeholder bootstrap과 placeholder page만 두고 Router 구현은 이후 단계로 미룬다.
 
@@ -30,9 +30,9 @@
 - 2026-03-27: `AppError`, `Result<T>`, logger는 auth slice 내부의 임시 generic core로 구현하고 shared core로 간주하지 않는다.
 - 2026-03-27: runtime bootstrap host는 `lib/bootstrap/bootstrap.dart`로 두고, app 설정은 계속 `app_config.dart`, `app_plugins.dart`, `app_features.dart` 3파일만 source of truth로 유지한다.
 - 2026-03-27: engine 내부의 bootstrap 개념은 `plugins`로 rename하고 public engine surface는 이를 export한다.
-- 2026-03-27: auth feature는 UI page를 소유하지 않고 provider/controller 같은 presentation layer만 가진다.
+- 2026-03-27: auth feature는 UI page를 소유하지 않고 provider/controller 같은 state layer만 가진다.
 - 2026-03-27: login page는 별도 UI feature로 분리하고 auth 기능을 소비만 한다.
-- 2026-03-27: feature는 필요한 layer만 가진다. `domain/data/presentation`을 모두 강제하지 않는다.
+- 2026-03-27: feature는 필요한 layer만 가진다. `ui/state/data/domain`을 모두 강제하지 않는다.
 
 - 2026-03-31: Phase 3.5에서는 auth 기능을 login/signup/logout/reset + validation 규칙까지 확장한다.
 - 2026-03-31: auth feature는 action/validation/session model을 소유하고, auth_entry feature는 login/signup/reset UI와 form controller를 소유한다.
@@ -42,3 +42,4 @@
 - 2026-03-31: signup 성공 정의는 `createUser + users/{uid} upsert 성공`이며, upsert 실패 시 rollback signOut을 시도하고 signup을 실패로 닫는다.
 - 2026-03-31: signup의 `users/{uid}` upsert는 `DocumentReference.get() -> set/update` 방식으로만 수행하고 `createdAt`은 최초 생성 시에만 기록한다.
 - 2026-03-31: validation은 auth가 `Result<void>`와 `AppError`로 정의하고, auth_entry는 표시와 navigation timing만 소유한다.
+- 2026-03-31: Feature 내부 기본 구조는 `ui/state/data/domain`으로 고정하고 `presentation` 레이어는 더 이상 사용하지 않는다.
