@@ -34,7 +34,7 @@
 - 2026-03-27: login page는 별도 UI feature로 분리하고 auth 기능을 소비만 한다.
 - 2026-03-27: feature는 필요한 layer만 가진다. `ui/state/data/domain`을 모두 강제하지 않는다.
 
-- 2026-03-31: Phase 3.5에서는 auth 기능을 login/signup/logout/reset + validation 규칙까지 확장한다.
+- 2026-03-31: Phase 3.1에서는 auth 기능을 login/signup/logout/reset + validation 규칙까지 확장한다.
 - 2026-03-31: auth feature는 action/validation/session model을 소유하고, auth_entry feature는 login/signup/reset UI와 form controller를 소유한다.
 - 2026-03-31: `AuthRepository`는 session stream을 노출하지 않고 action/validation contract만 가진다.
 - 2026-03-31: auth session 관찰은 `auth_session_provider`가 FirebaseAuth 기반 별도 provider로 소유한다.
@@ -44,7 +44,7 @@
 - 2026-03-31: validation은 auth가 `Result<void>`와 `AppError`로 정의하고, auth_entry는 표시와 navigation timing만 소유한다.
 - 2026-03-31: Feature 내부 기본 구조는 `ui/state/data/domain`으로 고정하고 `presentation` 레이어는 더 이상 사용하지 않는다.
 
-- 2026-04-03: Phase 3.7에서는 전역 에러 처리를 위해 ErrorHub를 도입한다.
+- 2026-04-03: Phase 3.2에서는 전역 에러 처리를 위해 ErrorHub를 도입한다.
 - 2026-04-03: ErrorHub는 모든 에러를 ErrorEnvelope로 래핑한다.
 - 2026-04-03: ErrorPolicy는 ErrorEnvelope를 ErrorDecision으로 변환한다.
 - 2026-04-03: ErrorDecision은 `shouldLog`, `shouldNotify`, `severity`를 가진다.
