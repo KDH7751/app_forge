@@ -6,11 +6,18 @@ import 'dart:async';
 /// Bootstrap
 ///
 /// 역할:
-/// - runtime bootstrap host로 app 설정 3파일을 소비해 RouterEngine과 redirect bridge를 조립함.
+/// - app root UI와 runtime 연결 지점을 조립한다.
 ///
-/// 경계:
-/// - source of truth가 아니며 app 설정은 `lib/app`의 3파일로만 수렴함.
-/// - `app_config`, `app_plugins`, `app_features`를 소비만 하고 설정을 재정의하지 않음.
+/// 흐름:
+/// - 초기 navigation 상태를 만들고
+/// - auth 상태와 redirect 입력을 연결하며
+/// - 전역 에러를 UI 알림으로 연결한다.
+///
+/// 영향:
+/// - app 시작 직후 화면 흐름과 전역 에러 노출 방식이 여기서 결정된다.
+///
+/// 주의:
+/// - 전역 listener는 중복 등록되면 안 된다.
 /// ===================================================================
 
 import 'package:flutter/material.dart';
@@ -23,7 +30,7 @@ import '../app/app_features.dart';
 import '../features/auth/domain/auth_session.dart';
 import '../features/auth/state/auth_session_provider.dart';
 
-/// runtime bootstrap host widget.
+/// app root runtime 연결을 시작하는 host widget.
 class Bootstrap extends StatefulWidget {
   const Bootstrap({
     super.key,
@@ -34,12 +41,11 @@ class Bootstrap extends StatefulWidget {
   final List<Override> overrides;
   final ErrorHub errorHub;
 
-  /// stateful bootstrap state 생성.
   @override
   State<Bootstrap> createState() => _BootstrapState();
 }
 
-/// Router와 bridge notifier를 소유하는 runtime bootstrap state.
+/// app 시작에 필요한 router와 notifier를 보관하는 state.
 class _BootstrapState extends State<Bootstrap> {
   late final NavigationStateNotifier _navigationNotifier;
   late final ValueNotifier<AppAuthRedirectStatus> _authRedirectNotifier;
@@ -47,7 +53,10 @@ class _BootstrapState extends State<Bootstrap> {
   late final GoRouter _router;
   late final ErrorHub _errorHub;
 
-  /// 초기 navigation 상태와 redirect bridge 구성.
+  /// app 시작 시 필요한 연결을 한 번만 만든다.
+  ///
+  /// 여기서 구성한 초기 상태와 redirect 연결에 따라
+  /// 첫 화면 흐름이 달라진다.
   @override
   void initState() {
     super.initState();
@@ -74,7 +83,7 @@ class _BootstrapState extends State<Bootstrap> {
     _router = _routerEngine.build();
   }
 
-  /// Router와 내부 notifier 정리.
+  /// app 종료 시 router와 notifier를 정리한다.
   @override
   void dispose() {
     _router.dispose();
@@ -83,7 +92,10 @@ class _BootstrapState extends State<Bootstrap> {
     super.dispose();
   }
 
-  /// app redirect를 RouterEngine 입력 시그니처로 연결.
+  /// 현재 인증 상태를 redirect 판단 입력으로 연결한다.
+  ///
+  /// 이 연결 방식이 바뀌면
+  /// app 전역 화면 접근 흐름도 함께 달라진다.
   String? _handleAppRedirect(BuildContext context, GoRouterState state) {
     return resolveAppRedirect(
       authStatus: _authRedirectNotifier.value,
@@ -91,7 +103,7 @@ class _BootstrapState extends State<Bootstrap> {
     );
   }
 
-  /// ProviderScope와 MaterialApp.router 조립.
+  /// app root에 필요한 provider와 ErrorHub scope를 연결한다.
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
@@ -111,7 +123,7 @@ class _BootstrapState extends State<Bootstrap> {
   }
 }
 
-/// Provider bridge를 포함한 runtime host view.
+/// auth 상태와 전역 에러 listener를 포함한 root view.
 class _BootstrapView extends ConsumerStatefulWidget {
   const _BootstrapView({
     required this.router,
@@ -127,13 +139,17 @@ class _BootstrapView extends ConsumerStatefulWidget {
   ConsumerState<_BootstrapView> createState() => _BootstrapViewState();
 }
 
-/// auth session provider와 redirect notifier를 연결하는 state.
+/// app 전역 listener를 관리하는 state.
 class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   ProviderSubscription<AsyncValue<AuthSession?>>? _authSessionSubscription;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
   StreamSubscription<ErrorEvent>? _errorSubscription;
 
+  /// auth 상태와 ErrorHub stream을 앱 시작 시 바로 연결한다.
+  ///
+  /// 이 listener들은 app 전체에서 한 번만 살아 있어야
+  /// redirect와 전역 알림이 중복되지 않는다.
   @override
   void initState() {
     super.initState();
@@ -146,6 +162,7 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
     _errorSubscription = widget.errorHub.stream.listen(_handleErrorEvent);
   }
 
+  /// 등록한 전역 listener를 정리한다.
   @override
   void dispose() {
     unawaited(_errorSubscription?.cancel());
@@ -153,6 +170,9 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
     super.dispose();
   }
 
+  /// auth session 값을 redirect용 상태로 동기화한다.
+  ///
+  /// 이 값이 바뀌면 app 전역 접근 가능 화면도 함께 달라진다.
   void _syncRedirectStatus(AsyncValue<AuthSession?> sessionValue) {
     final nextStatus = switch (sessionValue) {
       AsyncData<AuthSession?>(value: final session) when session != null =>
@@ -169,6 +189,9 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
     widget.authRedirectNotifier.value = nextStatus;
   }
 
+  /// ErrorHub stream을 구독해 전역 에러를 UI 알림으로 전달한다.
+  ///
+  /// 이 listener는 app 전체에서 단 하나만 존재해야 한다.
   void _handleErrorEvent(ErrorEvent event) {
     if (!event.decision.shouldNotify) {
       return;
@@ -185,6 +208,7 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
+  /// app root MaterialApp을 렌더링한다.
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(

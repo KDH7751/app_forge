@@ -10,14 +10,22 @@ import '../app/app_plugins.dart';
 /// Bootstrap Runtime
 ///
 /// 역할:
-/// - app runtime 시작에 필요한 zone/error/plugin orchestration 담당.
+/// - app runtime을 단일 zone과 ErrorHub로 시작한다.
 ///
-/// 경계:
-/// - app 설정은 소비만 하고 재정의하지 않음.
-/// - Feature 구현이나 UI 정책을 직접 소유하지 않음.
+/// 흐름:
+/// - binding 초기화 → ErrorHub 준비 → error capture 연결 → plugin 초기화 → runApp
+///
+/// 영향:
+/// - 초기화 순서와 capture 설정에 따라 앱 전역 에러 처리와 시작 흐름이 달라진다.
+///
+/// 주의:
+/// - 모든 초기화는 같은 zone 안에서 실행되어야 한다.
 /// ===================================================================
 
-/// app runtime을 단일 zone과 ErrorHub로 시작한다.
+/// app을 ErrorHub와 함께 실행한다.
+///
+/// 이 함수에서 정한 초기화 순서와 capture 범위에 따라
+/// app 전역 실행 흐름이 결정된다.
 Future<void> runAppWithErrorHandling(
   Widget Function(ErrorHub errorHub) builder,
 ) async {

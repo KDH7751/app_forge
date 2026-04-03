@@ -1,11 +1,11 @@
 import 'error_models.dart';
 
-/// 외부 로깅 시스템으로 전달하는 최소 logger port.
+/// ErrorHub가 로그 출력을 위임할 때 쓰는 logger contract.
 abstract class Logger {
   void log(ErrorEnvelope error, ErrorSeverity severity);
 }
 
-/// 여러 logger에 동일한 envelope를 fan-out한다.
+/// 같은 에러를 여러 logger로 전달할 때 쓰는 조합 logger.
 class MultiLogger implements Logger {
   const MultiLogger(this.loggers);
 

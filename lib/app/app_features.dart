@@ -1,14 +1,16 @@
 // ignore_for_file: dangling_library_doc_comments
 
 /// ===================================================================
-/// App Features
+/// AppFeatures
 ///
 /// 역할:
-/// - 이 app이 활성화할 Feature와 route tree를 조립한다.
+/// - app에서 활성화할 feature와 전역 흐름 입력을 정의한다.
 ///
-/// 경계:
-/// - route 정책 조합은 app이 소유한다.
-/// - Router 구현은 Engine에 맡긴다.
+/// 영향:
+/// - 이 설정에 따라 app 전체 라우팅 구조, 접근 흐름, 전역 알림 방식이 달라진다.
+///
+/// 주의:
+/// - route나 전역 정책을 바꾸면 관련 화면 접근 흐름을 함께 확인해야 한다.
 /// ===================================================================
 
 import 'package:flutter/material.dart';
@@ -22,10 +24,16 @@ import '../features/home/ui/home_page.dart';
 import '../features/posts/ui/post_detail_page.dart';
 import '../features/profile/ui/profile_page.dart';
 
-/// app redirect 판단용 최소 auth 상태.
+/// app redirect 판단에 필요한 최소 auth 상태.
+///
+/// 이 상태 값이 바뀌면
+/// app 전역 화면 접근 흐름도 함께 달라진다.
 enum AppAuthRedirectStatus { unknown, authenticated, unauthenticated }
 
-/// app 활성 Feature 등록 목록.
+/// 이 앱이 실제로 활성화하는 feature 목록.
+///
+/// 이 목록에 따라 app 전체 라우팅 구조와
+/// 화면 접근 가능 범위가 결정된다.
 final appFeatures = <EngineFeature>[
   EngineFeature(
     key: 'auth_entry',
@@ -116,21 +124,31 @@ final appFeatures = <EngineFeature>[
   ),
 ];
 
-/// Router tree 구성용 top-level route 목록.
+/// feature별 top-level route tree를 모은 목록.
+///
+/// 이 값에 따라 app의 상위 화면 구조와
+/// nested route 연결 방식이 달라진다.
 final appRouteTrees = collectFeatureRouteTrees(appFeatures);
 
-/// route matching / navigation sync용 flat route 목록.
+/// route matching과 current route 판별에 사용하는 flat route 목록.
+///
+/// 이 값을 바꾸면 app 전역의
+/// 현재 화면 판별 기준도 함께 달라진다.
 final appRoutes = collectFeatureRoutes(appFeatures);
 
-/// app root가 순서대로 조회하는 feature error mapper 목록.
+/// 전역 에러 알림 문구를 만들 때 순서대로 조회하는 feature mapper 목록.
 ///
-/// 기본 동작은 server error를 global notify로 올리는 쪽이지만,
-/// UX 요구사항에 따라 일부 feature는 local 처리로 전환될 수 있다.
+/// 이 목록에 따라 app 전역 알림에서
+/// 어떤 메시지를 우선 사용할지가 달라진다.
 final appErrorNotificationTextMappers = <String? Function(Object?)>[
   mapAuthErrorText,
 ];
 
-/// app layer가 소유하는 redirect 정책.
+/// 인증 상태와 현재 location을 기준으로 redirect 대상을 결정한다.
+///
+/// 비로그인 사용자는 auth entry route만 접근하게 하고
+/// 로그인 사용자는 login / signup 같은 공개 진입 화면에 머물지 않게 만든다.
+/// 공개 route 목록을 바꾸면 app 전체 인증 진입 흐름도 함께 달라진다.
 String? resolveAppRedirect({
   required AppAuthRedirectStatus authStatus,
   required String location,
@@ -162,7 +180,11 @@ String? resolveAppRedirect({
   return null;
 }
 
-/// app root snackbar/dialog에서 사용할 feature error mapper 조합.
+/// 전역 에러 알림용 문자열을 결정한다.
+///
+/// 각 feature가 제공한 mapper를 순서대로 조회해
+/// 첫 번째로 매칭되는 메시지를 사용한다.
+/// 이 결과에 따라 app 전역 알림 문구가 달라진다.
 String? mapAppErrorNotificationText(Object? domainError) {
   for (final mapper in appErrorNotificationTextMappers) {
     final message = mapper(domainError);
@@ -175,11 +197,14 @@ String? mapAppErrorNotificationText(Object? domainError) {
   return null;
 }
 
-/// nested posts route placeholder 페이지.
+/// nested posts route 연결을 확인하기 위한 placeholder 페이지.
+///
+/// posts route 구성이 바뀔 때
+/// 기본 진입 화면 역할을 하는 페이지다.
 class _PostsPage extends StatelessWidget {
   const _PostsPage();
 
-  /// posts placeholder 본문 렌더링.
+  /// posts route의 임시 본문을 렌더링한다.
   @override
   Widget build(BuildContext context) {
     return const Center(

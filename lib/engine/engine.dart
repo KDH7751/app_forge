@@ -1,14 +1,16 @@
 // ignore_for_file: dangling_library_doc_comments
 
 /// ===================================================================
-/// Engine Public API
+/// Engine Public Surface
 ///
-/// 역할:
-/// - app과 Feature가 사용하는 유일한 Engine surface 제공.
+/// app과 feature가 사용하는 engine의 유일한 import 경로.
 ///
-/// 경계:
-/// - `lib/engine/src/**` 내부 구현은 외부에 노출하지 않음.
-/// - app/Feature 전용 구현은 여기서 공개하지 않음.
+/// engine 내부 구현(src/**)은 직접 접근하지 않고,
+/// 이 파일을 통해 필요한 contract만 사용해야 한다.
+///
+/// 주의:
+/// - public contract만 노출해야 한다.
+/// - 내부 구현 세부사항을 외부로 확장하지 않는다.
 /// ===================================================================
 
 export 'src/plugins/engine_plugin.dart';

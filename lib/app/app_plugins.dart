@@ -1,34 +1,48 @@
 // ignore_for_file: dangling_library_doc_comments
 
 /// ===================================================================
-/// App Plugins
+/// AppPlugins
 ///
 /// 역할:
-/// - 이 app이 Engine에 주입할 concrete Plugin 목록 조립.
+/// - app에서 사용할 plugin과 logger 구성을 정의한다.
 ///
-/// 경계:
-/// - plugin 실행 순서는 Engine에 둠.
-/// - 실제 plugin 선택은 app이 소유함.
+/// 영향:
+/// - 이 설정에 따라 app 시작 준비 단계와 외부 시스템 연결 방식이 달라진다.
+///
+/// 주의:
+/// - plugin이나 logger를 바꾸면 app 시작과 전역 로그 흐름을 함께 확인해야 한다.
 /// ===================================================================
 
 import 'package:app_forge/engine/engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-/// app 소유 Plugin 등록 목록.
+/// app이 실제로 사용할 plugin 등록 목록.
+///
+/// 이 목록에 따라 app 시작 전에 준비되는
+/// 외부 시스템 연결 범위가 달라진다.
 final appPlugins = <EnginePlugin>[
   const EnginePlugin(name: 'firebase_core', run: _runFirebaseCorePlugin),
 ];
 
-/// app 전역 에러 logger 조립.
+/// app에서 사용하는 logger 조합.
+///
+/// 여기서 등록된 logger에 따라
+/// 에러 로그가 외부로 전달되는 방식이 달라진다.
 final appLogger = MultiLogger(<Logger>[const ConsoleLogger()]);
 
-/// app 등록 plugin 실행의 Engine 위임 진입점.
+/// app 시작 전에 plugin 초기화를 실행한다.
+///
+/// 이 단계가 바뀌면 app 시작 준비 흐름에도
+/// 직접 영향이 생긴다.
 Future<void> initializeAppPlugins() {
   return runEnginePlugins(appPlugins);
 }
 
-/// Firebase Core plugin 실행.
+/// Firebase Core plugin을 한 번만 초기화한다.
+///
+/// 이 초기화가 실패하면 Firebase에 의존하는
+/// app 시작 흐름도 함께 영향을 받는다.
 Future<void> _runFirebaseCorePlugin() async {
   if (Firebase.apps.isNotEmpty) {
     return;
@@ -38,7 +52,10 @@ Future<void> _runFirebaseCorePlugin() async {
   await Firebase.initializeApp();
 }
 
-/// debugPrint 기반 app 전역 logger.
+/// 개발 중 전역 에러를 확인하는 기본 logger.
+///
+/// 별도 로깅을 붙이기 전까지
+/// app 전역 에러 흐름을 가장 먼저 확인하는 출력 대상이다.
 class ConsoleLogger implements Logger {
   const ConsoleLogger();
 

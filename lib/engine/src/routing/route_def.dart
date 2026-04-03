@@ -1,24 +1,15 @@
 // ignore_for_file: dangling_library_doc_comments
 
-/// ===================================================================
-/// RouteDef
-///
-/// 역할:
-/// - Engine Router가 소비하는 최소 route DSL 제공.
-///
-/// 경계:
-/// - child route를 포함해 path는 항상 절대경로를 source of truth로 유지함.
-/// - shell 정책은 metadata로만 표현함.
-/// ===================================================================
+/// router_engine이 라우팅을 조립할 때 쓰는 route 정의 구조.
 
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
-/// RouteDef page builder 시그니처.
+/// RouteDef가 화면 빌더를 보관할 때 쓰는 시그니처.
 typedef RouteDefBuilder =
     Widget Function(BuildContext context, GoRouterState state);
 
-/// shell metadata를 포함한 최소 route descriptor.
+/// shell metadata를 포함한 route 입력 모델.
 class RouteDef {
   RouteDef({
     required this.path,
@@ -48,10 +39,10 @@ class RouteDef {
   final bool showDrawer;
   final bool useShell;
 
-  /// child route 존재 여부.
+  /// child route가 있는지 확인할 때 쓰는 값.
   bool get hasChildren => children.isNotEmpty;
 
-  /// 일부 metadata만 바꾼 RouteDef 복사본.
+  /// route metadata 일부만 바꿔 새 RouteDef를 만들 때 쓴다.
   RouteDef copyWith({
     String? path,
     String? name,
@@ -79,12 +70,12 @@ class RouteDef {
   }
 }
 
-/// 절대경로 여부 확인.
+/// route path 검증에 쓰는 절대경로 확인 함수.
 bool _isAbsolutePath(String path) {
   return path.startsWith('/');
 }
 
-/// child route path의 절대경로 사용 여부 확인.
+/// child route path 검증에 쓰는 절대경로 확인 함수.
 bool _childrenUseAbsolutePaths(List<RouteDef> children) {
   for (final child in children) {
     if (!_isAbsolutePath(child.path)) {

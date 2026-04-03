@@ -1,10 +1,10 @@
-/// 에러가 capture된 진입 레이어.
+/// ErrorHub가 에러 출처를 구분할 때 쓰는 source 값.
 enum ErrorSource { ui, async, framework, platform, unknown }
 
-/// 에러 처리 강도를 나타내는 공통 severity.
+/// policy와 logger가 공통으로 쓰는 에러 severity.
 enum ErrorSeverity { info, warning, error, fatal }
 
-/// policy가 반환하는 최소 처리 결정값.
+/// ErrorPolicy가 반환하는 처리 결정값.
 class ErrorDecision {
   const ErrorDecision({
     required this.shouldLog,
@@ -17,7 +17,7 @@ class ErrorDecision {
   final ErrorSeverity severity;
 }
 
-/// raw error와 capture 메타데이터를 함께 묶는 envelope.
+/// ErrorHub가 정책 판단과 로그 전달에 쓰는 에러 envelope.
 class ErrorEnvelope {
   const ErrorEnvelope({
     required this.error,
@@ -34,7 +34,7 @@ class ErrorEnvelope {
   final DateTime timestamp;
 }
 
-/// UI가 소비하는 에러 stream 이벤트.
+/// UI와 runtime listener가 구독하는 에러 stream 이벤트.
 class ErrorEvent {
   const ErrorEvent({required this.envelope, required this.decision});
 
