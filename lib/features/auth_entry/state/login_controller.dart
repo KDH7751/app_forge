@@ -17,7 +17,6 @@ class LoginControllerState {
     this.password = '',
     this.emailError,
     this.passwordError,
-    this.serverError,
     this.isLoading = false,
   });
 
@@ -25,7 +24,6 @@ class LoginControllerState {
   final String password;
   final AppError? emailError;
   final AppError? passwordError;
-  final AppError? serverError;
   final bool isLoading;
 
   bool get canSubmit =>
@@ -36,11 +34,9 @@ class LoginControllerState {
     String? password,
     AppError? emailError,
     AppError? passwordError,
-    AppError? serverError,
     bool? isLoading,
     bool clearEmailError = false,
     bool clearPasswordError = false,
-    bool clearServerError = false,
   }) {
     return LoginControllerState(
       email: email ?? this.email,
@@ -49,7 +45,6 @@ class LoginControllerState {
       passwordError: clearPasswordError
           ? null
           : (passwordError ?? this.passwordError),
-      serverError: clearServerError ? null : (serverError ?? this.serverError),
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -63,19 +58,11 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
   }
 
   void updateEmail(String email) {
-    state = state.copyWith(
-      email: email,
-      clearEmailError: true,
-      clearServerError: true,
-    );
+    state = state.copyWith(email: email, clearEmailError: true);
   }
 
   void updatePassword(String password) {
-    state = state.copyWith(
-      password: password,
-      clearPasswordError: true,
-      clearServerError: true,
-    );
+    state = state.copyWith(password: password, clearPasswordError: true);
   }
 
   Future<Result<void>> submit() async {
@@ -87,7 +74,6 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
       state = state.copyWith(
         emailError: _emailErrorFor(error),
         passwordError: _passwordErrorFor(error),
-        clearServerError: true,
       );
 
       return validation;
@@ -97,19 +83,18 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
       isLoading: true,
       clearEmailError: true,
       clearPasswordError: true,
-      clearServerError: true,
     );
 
     final result = await ref
         .read(authRepositoryProvider)
         .login(email: state.email.trim(), password: state.password);
 
-    if (result case Failure<void>(error: final error)) {
-      state = state.copyWith(isLoading: false, serverError: error);
+    if (result case Failure<void>()) {
+      state = state.copyWith(isLoading: false);
       return result;
     }
 
-    state = state.copyWith(isLoading: false, clearServerError: true);
+    state = state.copyWith(isLoading: false);
     return result;
   }
 

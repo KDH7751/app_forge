@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:app_forge/bootstrap/bootstrap.dart';
+import 'package:app_forge/engine/engine.dart';
+import 'package:app_forge/app/app_config.dart';
 import 'package:app_forge/features/auth/domain/app_error.dart';
 import 'package:app_forge/features/auth/domain/auth_repository.dart';
 import 'package:app_forge/features/auth/domain/auth_session.dart';
@@ -212,6 +214,50 @@ void main() {
     expect(find.text('Create account'), findsOneWidget);
     expect(find.text('비밀번호 재설정 메일을 전송했습니다'), findsOneWidget);
   });
+
+  testWidgets('login failure shows global snackbar once at app root', (
+    tester,
+  ) async {
+    final sessionSource = _FakeAuthSessionSource();
+    final repository = _FakeAuthRepository(
+      sessionSource: sessionSource,
+      loginResult: const Result<void>.failure(AppError.network),
+    );
+    addTearDown(sessionSource.dispose);
+
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
+    await tester.enterText(find.byType(TextField).at(1), 'password123');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Login'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('네트워크 문제로 요청을 처리할 수 없습니다'), findsOneWidget);
+  });
+
+  testWidgets('login validation failure stays local and does not notify root', (
+    tester,
+  ) async {
+    final sessionSource = _FakeAuthSessionSource();
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
+
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), 'invalid-email');
+    await tester.enterText(find.byType(TextField).at(1), 'password123');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Login'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('올바른 이메일 형식을 입력해주세요'), findsOneWidget);
+    expect(find.text('네트워크 문제로 요청을 처리할 수 없습니다'), findsNothing);
+    expect(find.byType(SnackBar), findsNothing);
+  });
 }
 
 Bootstrap _buildBootstrap(
@@ -219,6 +265,10 @@ Bootstrap _buildBootstrap(
   _FakeAuthSessionSource sessionSource,
 ) {
   return Bootstrap(
+    errorHub: ErrorHub(
+      policy: appConfig.errorPolicy,
+      logger: const _NoopLogger(),
+    ),
     overrides: <Override>[
       authRepositoryProvider.overrideWithValue(repository),
       authSessionStreamProvider.overrideWithValue(sessionSource.stream),
@@ -250,16 +300,23 @@ class _FakeAuthSessionSource {
 }
 
 class _FakeAuthRepository implements AuthRepository {
-  _FakeAuthRepository({required _FakeAuthSessionSource sessionSource})
-    : _sessionSource = sessionSource;
+  _FakeAuthRepository({
+    required _FakeAuthSessionSource sessionSource,
+    this.loginResult,
+  }) : _sessionSource = sessionSource;
 
   final _FakeAuthSessionSource _sessionSource;
+  final Result<void>? loginResult;
 
   @override
   Future<Result<void>> login({
     required String email,
     required String password,
   }) async {
+    if (loginResult != null) {
+      return loginResult!;
+    }
+
     _sessionSource.setSession(AuthSession(uid: 'uid-1', email: email));
 
     return const Result<void>.success(null);
@@ -340,4 +397,11 @@ class _FakeAuthRepository implements AuthRepository {
   bool _isValidPassword(String password) {
     return password.length >= 8;
   }
+}
+
+class _NoopLogger implements Logger {
+  const _NoopLogger();
+
+  @override
+  void log(ErrorEnvelope error, ErrorSeverity severity) {}
 }

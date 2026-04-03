@@ -12,12 +12,16 @@
 /// ===================================================================
 
 import 'package:app_forge/engine/engine.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 /// app 소유 Plugin 등록 목록.
 final appPlugins = <EnginePlugin>[
   const EnginePlugin(name: 'firebase_core', run: _runFirebaseCorePlugin),
 ];
+
+/// app 전역 에러 logger 조립.
+final appLogger = MultiLogger(<Logger>[const ConsoleLogger()]);
 
 /// app 등록 plugin 실행의 Engine 위임 진입점.
 Future<void> initializeAppPlugins() {
@@ -32,4 +36,25 @@ Future<void> _runFirebaseCorePlugin() async {
 
   // 실제 project wiring은 flutterfire configure와 플랫폼 설정이 담당한다.
   await Firebase.initializeApp();
+}
+
+/// debugPrint 기반 app 전역 logger.
+class ConsoleLogger implements Logger {
+  const ConsoleLogger();
+
+  @override
+  void log(ErrorEnvelope error, ErrorSeverity severity) {
+    debugPrint(
+      '[${severity.name.toUpperCase()}]'
+      '[${error.source.name}] ${error.error}',
+    );
+
+    if (error.domainError != null) {
+      debugPrint('domainError: ${error.domainError}');
+    }
+
+    if (error.stackTrace != null) {
+      debugPrint('${error.stackTrace}');
+    }
+  }
 }

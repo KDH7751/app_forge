@@ -13,6 +13,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:app_forge/engine/engine.dart';
+import 'package:app_forge/features/auth/state/auth_error_mapper.dart';
 import 'package:app_forge/features/auth_entry/state/auth_entry_notice.dart';
 import 'package:app_forge/features/auth_entry/ui/login_page.dart';
 import 'package:app_forge/features/auth_entry/ui/reset_password_page.dart';
@@ -121,6 +122,14 @@ final appRouteTrees = collectFeatureRouteTrees(appFeatures);
 /// route matching / navigation sync용 flat route 목록.
 final appRoutes = collectFeatureRoutes(appFeatures);
 
+/// app root가 순서대로 조회하는 feature error mapper 목록.
+///
+/// 기본 동작은 server error를 global notify로 올리는 쪽이지만,
+/// UX 요구사항에 따라 일부 feature는 local 처리로 전환될 수 있다.
+final appErrorNotificationTextMappers = <String? Function(Object?)>[
+  mapAuthErrorText,
+];
+
 /// app layer가 소유하는 redirect 정책.
 String? resolveAppRedirect({
   required AppAuthRedirectStatus authStatus,
@@ -148,6 +157,19 @@ String? resolveAppRedirect({
   if (authStatus == AppAuthRedirectStatus.authenticated &&
       isPublicAuthEntryRoute) {
     return '/home';
+  }
+
+  return null;
+}
+
+/// app root snackbar/dialog에서 사용할 feature error mapper 조합.
+String? mapAppErrorNotificationText(Object? domainError) {
+  for (final mapper in appErrorNotificationTextMappers) {
+    final message = mapper(domainError);
+
+    if (message != null) {
+      return message;
+    }
   }
 
   return null;

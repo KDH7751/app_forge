@@ -12,7 +12,7 @@ Feature를 추가하는 방식으로 확장할 수 있어야 한다.
 
 ## 현재 상태
 
-현재 Phase 3.5까지 완료되었다.
+현재 Phase 3.7까지 완료되었다.
 
 구현된 범위:
 
@@ -29,6 +29,11 @@ Feature를 추가하는 방식으로 확장할 수 있어야 한다.
 - `users/{uid}` upsert 보장
 - auth 내부 최소 `AppError` / `Result<T>` / logger
 - `auth_entry` form UI / controller 구조
+- ErrorHub 기반 전역 에러 처리 구조
+- ErrorPolicy / ErrorDecision 기반 에러 흐름
+- Logger abstraction 및 MultiLogger
+- root 단일 listener 기반 UI 에러 처리
+- runZonedGuarded 기반 runtime bootstrap 구조
 - 검증 라우트
   - `/login`
   - `/signup`
@@ -76,6 +81,9 @@ app 설정은 아래 3개 파일에서만 수행한다.
 - Feature는 필요한 layer만 가진다. 빈 `domain/`, `data/` 폴더를 강제하지 않는다.
 - Feature 내부 기본 구조는 `ui/state/data/domain` 규칙을 따른다.
 - auth의 state는 provider/controller를 뜻하며, login/signup/reset page는 별도 auth_entry feature의 ui가 소유한다.
+- 전역 에러 처리는 ErrorHub -> Policy -> Logger/UI 흐름을 따른다.
+- engine은 에러를 해석하지 않는다.
+- UI는 ErrorDecision을 기반으로 표현만 수행한다.
 
 ## 현재 범위에 포함되지 않는 것
 

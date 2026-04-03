@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // ignore_for_file: dangling_library_doc_comments
 
 /// ===================================================================
@@ -23,9 +25,14 @@ import '../features/auth/state/auth_session_provider.dart';
 
 /// runtime bootstrap host widget.
 class Bootstrap extends StatefulWidget {
-  const Bootstrap({super.key, this.overrides = const <Override>[]});
+  const Bootstrap({
+    super.key,
+    this.overrides = const <Override>[],
+    required this.errorHub,
+  });
 
   final List<Override> overrides;
+  final ErrorHub errorHub;
 
   /// stateful bootstrap state 생성.
   @override
@@ -38,12 +45,14 @@ class _BootstrapState extends State<Bootstrap> {
   late final ValueNotifier<AppAuthRedirectStatus> _authRedirectNotifier;
   late final RouterEngine _routerEngine;
   late final GoRouter _router;
+  late final ErrorHub _errorHub;
 
   /// 초기 navigation 상태와 redirect bridge 구성.
   @override
   void initState() {
     super.initState();
 
+    _errorHub = widget.errorHub;
     _navigationNotifier = NavigationStateNotifier(
       initialState: resolveNavigationState(
         location: appConfig.initialLocation,
@@ -90,9 +99,13 @@ class _BootstrapState extends State<Bootstrap> {
         navigationStateNotifierProvider.overrideWithValue(_navigationNotifier),
         ...widget.overrides,
       ],
-      child: _BootstrapView(
-        router: _router,
-        authRedirectNotifier: _authRedirectNotifier,
+      child: ErrorHubScope(
+        errorHub: _errorHub,
+        child: _BootstrapView(
+          router: _router,
+          authRedirectNotifier: _authRedirectNotifier,
+          errorHub: _errorHub,
+        ),
       ),
     );
   }
@@ -103,10 +116,12 @@ class _BootstrapView extends ConsumerStatefulWidget {
   const _BootstrapView({
     required this.router,
     required this.authRedirectNotifier,
+    required this.errorHub,
   });
 
   final GoRouter router;
   final ValueNotifier<AppAuthRedirectStatus> authRedirectNotifier;
+  final ErrorHub errorHub;
 
   @override
   ConsumerState<_BootstrapView> createState() => _BootstrapViewState();
@@ -115,6 +130,9 @@ class _BootstrapView extends ConsumerStatefulWidget {
 /// auth session provider와 redirect notifier를 연결하는 state.
 class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   ProviderSubscription<AsyncValue<AuthSession?>>? _authSessionSubscription;
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+  StreamSubscription<ErrorEvent>? _errorSubscription;
 
   @override
   void initState() {
@@ -125,10 +143,12 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
       (_, next) => _syncRedirectStatus(next),
       fireImmediately: true,
     );
+    _errorSubscription = widget.errorHub.stream.listen(_handleErrorEvent);
   }
 
   @override
   void dispose() {
+    unawaited(_errorSubscription?.cancel());
     _authSessionSubscription?.close();
     super.dispose();
   }
@@ -149,9 +169,26 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
     widget.authRedirectNotifier.value = nextStatus;
   }
 
+  void _handleErrorEvent(ErrorEvent event) {
+    if (!event.decision.shouldNotify) {
+      return;
+    }
+
+    final message = mapAppErrorNotificationText(event.envelope.domainError);
+
+    if (message == null || message.isEmpty) {
+      return;
+    }
+
+    _scaffoldMessengerKey.currentState
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      scaffoldMessengerKey: _scaffoldMessengerKey,
       title: appConfig.appTitle,
       debugShowCheckedModeBanner: appConfig.showDebugBanner,
       theme: appConfig.theme,

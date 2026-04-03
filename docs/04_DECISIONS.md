@@ -43,3 +43,22 @@
 - 2026-03-31: signup의 `users/{uid}` upsert는 `DocumentReference.get() -> set/update` 방식으로만 수행하고 `createdAt`은 최초 생성 시에만 기록한다.
 - 2026-03-31: validation은 auth가 `Result<void>`와 `AppError`로 정의하고, auth_entry는 표시와 navigation timing만 소유한다.
 - 2026-03-31: Feature 내부 기본 구조는 `ui/state/data/domain`으로 고정하고 `presentation` 레이어는 더 이상 사용하지 않는다.
+
+- 2026-04-03: Phase 3.7에서는 전역 에러 처리를 위해 ErrorHub를 도입한다.
+- 2026-04-03: ErrorHub는 모든 에러를 ErrorEnvelope로 래핑한다.
+- 2026-04-03: ErrorPolicy는 ErrorEnvelope를 ErrorDecision으로 변환한다.
+- 2026-04-03: ErrorDecision은 `shouldLog`, `shouldNotify`, `severity`를 가진다.
+- 2026-04-03: severity는 `info`, `warning`, `error`, `fatal`로 정의한다.
+- 2026-04-03: `isFatal` 필드는 사용하지 않는다.
+- 2026-04-03: engine은 에러를 해석하지 않고 전달만 한다.
+- 2026-04-03: domainError는 optional metadata로만 전달된다.
+- 2026-04-03: ErrorPolicy는 domainError 타입을 캐스팅하거나 해석하지 않는다.
+- 2026-04-03: Logger는 ErrorDecision을 알지 않고 severity만 전달받는다.
+- 2026-04-03: UI는 `ErrorDecision.shouldNotify`만 기준으로 반응한다.
+- 2026-04-03: 전역 에러 UI 처리는 root 단일 listener에서 수행한다.
+- 2026-04-03: runZonedGuarded 기반 단일 zone에서 앱을 실행한다.
+- 2026-04-03: `ensureInitialized`, ErrorHub 생성, capture 설치, plugin init, `runApp`은 동일 zone에서 수행한다.
+- 2026-04-03: `main.dart`는 runtime entry 역할만 수행한다.
+- 2026-04-03: runtime orchestration은 bootstrap layer로 이동한다.
+- 2026-04-03: ErrorEnvelope, ErrorEvent, ErrorDecision, ErrorSource는 단일 file로 통합한다.
+- 2026-04-03: model 통합은 DX 개선 목적이며 책임 분리는 유지한다.

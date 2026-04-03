@@ -19,7 +19,6 @@ class SignupControllerState {
     this.emailError,
     this.passwordError,
     this.confirmPasswordError,
-    this.serverError,
     this.isLoading = false,
   });
 
@@ -29,7 +28,6 @@ class SignupControllerState {
   final AppError? emailError;
   final AppError? passwordError;
   final AppError? confirmPasswordError;
-  final AppError? serverError;
   final bool isLoading;
 
   bool get canSubmit =>
@@ -45,12 +43,10 @@ class SignupControllerState {
     AppError? emailError,
     AppError? passwordError,
     AppError? confirmPasswordError,
-    AppError? serverError,
     bool? isLoading,
     bool clearEmailError = false,
     bool clearPasswordError = false,
     bool clearConfirmPasswordError = false,
-    bool clearServerError = false,
   }) {
     return SignupControllerState(
       email: email ?? this.email,
@@ -63,7 +59,6 @@ class SignupControllerState {
       confirmPasswordError: clearConfirmPasswordError
           ? null
           : (confirmPasswordError ?? this.confirmPasswordError),
-      serverError: clearServerError ? null : (serverError ?? this.serverError),
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -77,26 +72,17 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
   }
 
   void updateEmail(String email) {
-    state = state.copyWith(
-      email: email,
-      clearEmailError: true,
-      clearServerError: true,
-    );
+    state = state.copyWith(email: email, clearEmailError: true);
   }
 
   void updatePassword(String password) {
-    state = state.copyWith(
-      password: password,
-      clearPasswordError: true,
-      clearServerError: true,
-    );
+    state = state.copyWith(password: password, clearPasswordError: true);
   }
 
   void updateConfirmPassword(String confirmPassword) {
     state = state.copyWith(
       confirmPassword: confirmPassword,
       clearConfirmPasswordError: true,
-      clearServerError: true,
     );
   }
 
@@ -114,7 +100,6 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
         emailError: _emailErrorFor(error),
         passwordError: _passwordErrorFor(error),
         confirmPasswordError: _confirmPasswordErrorFor(error),
-        clearServerError: true,
       );
 
       return validation;
@@ -125,19 +110,18 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
       clearEmailError: true,
       clearPasswordError: true,
       clearConfirmPasswordError: true,
-      clearServerError: true,
     );
 
     final result = await ref
         .read(authRepositoryProvider)
         .signup(email: state.email.trim(), password: state.password);
 
-    if (result case Failure<void>(error: final error)) {
-      state = state.copyWith(isLoading: false, serverError: error);
+    if (result case Failure<void>()) {
+      state = state.copyWith(isLoading: false);
       return result;
     }
 
-    state = state.copyWith(isLoading: false, clearServerError: true);
+    state = state.copyWith(isLoading: false);
     return result;
   }
 

@@ -18,9 +18,11 @@ lib/
   main.dart
   bootstrap/
     bootstrap.dart
+    bootstrap_runtime.dart
   engine/
     engine.dart
     src/
+      error/
       plugins/
       routing/
       shell/
@@ -51,6 +53,8 @@ lib/
 
 - `lib/engine/`: 재사용 가능한 Engine surface와 내부 구현을 가진다.
 - `lib/bootstrap/`: runtime bootstrap host를 가진다. app 3파일을 소비하지만 source of truth는 아니다.
+- `lib/bootstrap/bootstrap_runtime.dart`: runtime 시작에 필요한 zone, ErrorHub, plugin orchestration을 가진다.
+- `lib/engine/src/error`: ErrorHub, error model, policy/logger contract를 가진다.
 - `lib/engine/src/plugins`: engine이 소비하는 plugin 실행 계약을 가진다.
 - `lib/engine/src/routing`: Route DSL, matcher, navigation state, RouterEngine 구현을 가진다.
 - `lib/engine/src/shell`: EngineShell, FeatureShell 같은 shell UI 계약을 가진다.
@@ -114,6 +118,36 @@ Feature는 UI 중심 구조를 따른다.
 - `domain`: 계약, entity, error/result 같은 선택 레이어
 
 이 구조는 `presentation` 레이어에 UI와 상태가 혼합되는 문제를 방지하기 위해 도입되었다.
+
+## Error Handling Architecture
+
+앱 전역 에러 처리는 ErrorHub 기반 중앙 처리 구조를 사용한다.
+
+```text
+[Error 발생]
+  ↓
+ErrorHub (engine)
+  ↓
+ErrorPolicy (app_config)
+  ↓
+ErrorDecision
+  ↓
+ ├─ Logger (app_plugins)
+ └─ UI Event (stream -> root listener)
+```
+
+구조 규칙:
+
+- engine은 에러를 전달만 한다.
+- engine은 에러의 의미를 해석하지 않는다.
+- ErrorPolicy는 app layer에서 정의된다.
+- UI는 ErrorDecision을 기반으로 표현만 수행한다.
+
+UI 규칙:
+
+- 전역 error listener는 app root에서 단 한 번만 등록한다.
+- feature 내부에서 stream을 직접 listen하지 않는다.
+- 메시지 변환은 feature mapper를 사용한다.
 
 ## auth / auth_entry 분리
 

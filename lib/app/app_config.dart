@@ -21,6 +21,7 @@ class AppConfig {
     required this.initialLocation,
     required this.theme,
     required this.shellConfig,
+    required this.errorPolicy,
     this.showDebugBanner = false,
   });
 
@@ -28,6 +29,7 @@ class AppConfig {
   final String initialLocation;
   final ThemeData theme;
   final EngineShellConfig shellConfig;
+  final ErrorPolicy errorPolicy;
   final bool showDebugBanner;
 }
 
@@ -57,4 +59,5 @@ final appConfig = AppConfig(
       ),
     ),
   ),
+  errorPolicy: const DefaultErrorPolicy(),
 );

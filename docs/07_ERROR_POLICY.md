@@ -2,13 +2,53 @@
 
 ## 목적
 
-이 문서는 비동기 실패를 어떤 형태로 외부에 노출할지에 대한 기준을 정의한다.
+이 문서는 비동기 실패와 앱 전역 에러를 어떤 형태로 외부에 노출할지에 대한 기준을 정의한다.
 
 ## 기본 규칙
 
 - Feature 외부로 노출되는 비동기 API는 `Result<T>`를 반환해야 한다.
 - 외부 예외는 data layer나 Repository layer를 벗어나기 전에 `AppError`로 매핑해야 한다.
 - UI는 raw exception이 아니라 `AppError`만 처리해야 한다.
+
+## Error Model
+
+전역 에러 흐름은 다음 model을 사용한다.
+
+- `ErrorEnvelope`
+  - `error`
+  - `stackTrace`
+  - `domainError` (optional)
+  - `source`
+  - `timestamp`
+- `ErrorDecision`
+  - `shouldLog`
+  - `shouldNotify`
+  - `severity`
+- `ErrorSource`
+  - `ui`
+  - `async`
+  - `framework`
+  - `platform`
+  - `unknown`
+
+## Policy 규칙
+
+- ErrorPolicy는 ErrorEnvelope를 기반으로만 판단한다.
+- domainError의 존재 여부만 사용할 수 있다.
+- domainError의 타입을 캐스팅하거나 해석하면 안 된다.
+
+## DefaultErrorPolicy
+
+기본 규칙:
+
+- domainError 존재 -> log + notify
+- unknown error -> log only
+- framework/platform -> error 또는 fatal
+
+주의:
+
+- DefaultErrorPolicy는 기본값이다.
+- 실제 UX 요구사항에 따라 app에서 override해야 한다.
 
 ## 최소 타입
 

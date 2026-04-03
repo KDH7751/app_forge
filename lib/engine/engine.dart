@@ -12,6 +12,11 @@
 /// ===================================================================
 
 export 'src/plugins/engine_plugin.dart';
+export 'src/error/default_error_policy.dart';
+export 'src/error/error_hub.dart';
+export 'src/error/error_models.dart';
+export 'src/error/error_policy.dart';
+export 'src/error/logger.dart';
 export 'src/routing/engine_feature.dart';
 export 'src/routing/navigation_state.dart';
 export 'src/routing/route_def.dart';

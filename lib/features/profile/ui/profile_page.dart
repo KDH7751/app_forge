@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:app_forge/engine/engine.dart';
 
+import '../../auth/domain/result.dart';
 import '../../auth/state/auth_error_mapper.dart';
 import '../../auth/state/logout_controller.dart';
 
@@ -23,20 +25,22 @@ class ProfilePage extends ConsumerWidget {
               'Profile route inside the Engine shell with drawer enabled.',
               textAlign: TextAlign.center,
             ),
-            if (state.serverError != null) ...<Widget>[
-              const SizedBox(height: 12),
-              Text(
-                mapLogoutErrorText(state.serverError)!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-                textAlign: TextAlign.center,
-              ),
-            ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: state.isLoading
                   ? null
-                  : () {
-                      controller.submit();
+                  : () async {
+                      final result = await controller.submit();
+
+                      if (!context.mounted) {
+                        return;
+                      }
+
+                      if (result case Failure<void>(
+                        error: final error,
+                      ) when shouldReportAuthErrorNotification(error)) {
+                        reportUiError(context, error, domainError: error);
+                      }
                     },
               child: state.isLoading
                   ? const SizedBox(
