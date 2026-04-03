@@ -7,6 +7,9 @@ app 조립 코드, Feature 구현 코드를 분리하기 위해 설계되었다.
 
 구조의 핵심 경계는 다음과 같다.
 
+구현 규칙은 `docs/02_CODING_CONTRACT.md`에서 정의하며,
+세부 정책(특히 에러 처리)은 `docs/07_ERROR_POLICY.md`를 따른다.
+
 - `lib/engine/`는 재사용 가능한 Engine layer를 가진다.
 - `lib/app/`은 이 앱의 composition root를 가진다.
 - `lib/features/`는 제품 기능을 vertical slice 단위로 가진다.
@@ -63,14 +66,14 @@ lib/
 - `lib/features/`: vertical slice로 구성된 Feature module을 가진다.
 - `lib/features/**/ui`: page, widget, layout 같은 화면 렌더링 코드를 가진다.
 - `lib/features/**/state`: controller, provider, mapper, notice 같은 UI 상태와 흐름 코드를 가진다.
-- `lib/features/**/domain`: 필요한 경우 Feature 계약, entity, error/result를 가진다.
+- `lib/features/**/domain`: 필요한 경우 Feature 계약, entity, feature-level error/result를 가진다.
 - `lib/features/**/data`: 필요한 경우 repository 구현, datasource, 외부 SDK 연동을 가진다.
 
 ## app 설정 파일
 
 app 전용 설정은 반드시 아래 3개 파일로 수렴해야 한다.
 
-- `app_config.dart`: app의 look and feel, 초기 진입 location, 최소 shell config를 정의한다.
+- `app_config.dart`: app의 look and feel, 초기 진입 location, 최소 shell config와 app-level policy를 정의한다.
 - `app_plugins.dart`: Plugin 조립과 runtime integration을 정의한다.
 - `app_features.dart`: app에 등록할 Feature 목록과 route 조립 지점을 정의한다.
 
@@ -115,20 +118,39 @@ Feature는 UI 중심 구조를 따른다.
 - `ui`: 화면 렌더링
 - `state`: UI 상태 및 흐름 제어
 - `data`: 외부 시스템 접근
-- `domain`: 계약, entity, error/result 같은 선택 레이어
+- `domain`: 계약, entity, feature-level error/result 같은 선택 레이어
 
 이 구조는 `presentation` 레이어에 UI와 상태가 혼합되는 문제를 방지하기 위해 도입되었다.
 
 ## Error Handling Architecture
 
-앱 전역 에러 처리는 ErrorHub 기반 중앙 처리 구조를 사용한다.
+앱의 에러 관련 흐름은 아래 두 축으로 분리한다.
+
+### 1. Feature failure
+
+Feature 내부 비동기 실패와 validation 실패는
+`Result<T>`와 `AppError`를 사용해 처리한다.
+
+이 축은 다음 범위를 가진다.
+
+- validation
+- repository
+- controller
+- feature UI
+
+`AppError`는 feature-level 실패 표현이며,
+앱 전역/runtime 에러 모델이 아니다.
+
+### 2. Global/runtime error
+
+앱 전역 에러 처리는 `ErrorHub` 기반 중앙 처리 구조를 사용한다.
 
 ```text
 [Error 발생]
   ↓
 ErrorHub (engine)
   ↓
-ErrorPolicy (app_config)
+ErrorPolicy (app)
   ↓
 ErrorDecision
   ↓
@@ -138,24 +160,35 @@ ErrorDecision
 
 구조 규칙:
 
-- engine은 에러를 전달만 한다.
-- engine은 에러의 의미를 해석하지 않는다.
+- engine은 에러를 전달만 하며, 그 의미를 해석하지 않는다.
 - ErrorPolicy는 app layer에서 정의된다.
 - UI는 ErrorDecision을 기반으로 표현만 수행한다.
+- `domainError`는 단순 metadata로만 전달된다.
+- ErrorPolicy는 `domainError`의 존재 여부만 사용할 수 있다.
+- `domainError`의 타입, 필드, 의미를 해석하면 안 된다.
 
 UI 규칙:
 
 - 전역 error listener는 app root에서 단 한 번만 등록한다.
 - feature 내부에서 stream을 직접 listen하지 않는다.
+- feature UI는 자신의 `AppError`를 처리할 수 있다.
+- app root의 전역 에러 UI는 `ErrorDecision.shouldNotify`만 기준으로 반응한다.
 - 메시지 변환은 feature mapper를 사용한다.
+
+에러 처리의 세부 정책과 규칙은 `docs/07_ERROR_POLICY.md`를 따른다.
+구현 레벨에서의 규칙은 `docs/02_CODING_CONTRACT.md`를 참고한다.
 
 ## auth / auth_entry 분리
 
 - auth feature는 순수 기능 feature다.
 - auth는 UI page를 소유하지 않는다.
+- auth는 action, validation, feature-level contract를 소유한다.
 - auth의 `state`는 provider/controller layer를 의미한다.
+- auth는 session을 repository contract로 노출하지 않는다.
 - auth_entry feature는 auth 기능을 소비만 한다.
-- auth_entry feature는 auth state를 사용하되 auth 계약이나 구현을 재정의하거나 복제하지 않는다.
+- auth_entry feature는 login/signup/reset UI와 form controller 흐름을 소유한다.
+- session 관찰은 `auth_session_provider` 경로로만 이뤄진다.
+- auth_entry는 auth 계약이나 구현을 재정의하거나 복제하지 않는다.
 
 ## public Engine surface
 

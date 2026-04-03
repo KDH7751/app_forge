@@ -22,6 +22,9 @@ Feature를 추가하는 방식으로 확장할 수 있어야 한다.
 - Engine, app, Feature의 경계를 섞지 않는다.
 - 설정 포인트를 최소화한다.
 - Feature는 독립적으로 확장 가능한 단위여야 한다.
+- feature failure 처리와 app 전역/runtime 에러 처리는 서로 다른 계약으로 유지한다.
+
+구조와 구현 규칙은 `docs/01_ARCHITECTURE.md`와 `docs/02_CODING_CONTRACT.md`를 따른다.
 
 ## 금지 기준
 

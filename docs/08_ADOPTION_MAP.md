@@ -26,6 +26,9 @@
 현재 위 항목 중 `logger`, `auth session contract`, `Result / AppError`는 auth slice 내부에 최소 구현이 들어가 있다.
 아직 shared core로 승격된 상태는 아니다.
 
+`Result / AppError`는 현재 feature-level 최소 구현이며,
+global error system과는 별도 축으로 유지한다.
+
 ## Could
 
 - Firebase 외 backend를 위한 generic network layer
@@ -34,6 +37,6 @@
 
 ## 원칙
 
-- Engine으로 올리는 기준은 “여러 앱에서 반복되는가”이다.
+- Engine으로 올리는 기준은 여러 앱에서 반복되는가이다.
 - 제품 policy가 강한 코드는 Engine으로 올리지 않는다.
 - 재사용성보다 설정 비용이 커지면 Engine 흡수를 다시 검토한다.

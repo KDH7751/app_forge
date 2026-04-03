@@ -5,6 +5,8 @@
 Routing 시스템은 Engine이 소유하는 route DSL과
 app이 조립하는 route registration을 기반으로 동작한다.
 
+앱 전체 구조와 레이어 경계는 `docs/01_ARCHITECTURE.md`를 따른다.
+
 Engine Router는 auth를 직접 알면 안 된다.
 redirect policy가 필요해지면 그 책임은 app이 가진다.
 auth entry page는 별도 auth_entry feature가 소유하고, auth는 그 기능을 지원만 한다.
@@ -123,6 +125,13 @@ shell 내부 route는 metadata로 제어한다.
 
 `/login`, `/signup`, `/reset-password` route는 auth_entry feature의 page를 렌더링한다.
 auth_entry feature는 auth provider를 소비하지만 redirect는 직접 처리하지 않는다.
+
+## redirect 규칙
+
+- redirect 판단 책임은 app layer가 가진다.
+- RouterEngine은 redirect callback과 `refreshListenable`만 소비한다.
+- redirect는 인증 상태와 현재 location을 기준으로 판단한다.
+- redirect는 에러를 해석하거나 UI를 제어하는 책임을 가지지 않는다.
 
 ## EngineFeature와 route 등록
 

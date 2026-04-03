@@ -37,7 +37,7 @@ feature/
   - Firebase, API, DB, datasource, repository 구현을 포함한다
 - `domain`:
   - 필요한 경우에만 둔다
-  - `AppError`, `Result`, entity, repository contract 같은 feature 계약을 포함할 수 있다
+  - feature-level `AppError`, `Result`, entity, repository contract 같은 계약을 포함할 수 있다
 
 Firebase나 외부 backend 호출은 `features/**/data/**` 아래에서만 허용한다.
 UI는 외부 SDK를 직접 호출하면 안 된다.
@@ -82,12 +82,21 @@ UI는 외부 SDK를 직접 호출하면 안 된다.
 
 ## 비동기와 에러 규칙
 
+### Feature async failure
+
 - Feature 외부로 노출되는 모든 비동기 작업은 `Result<T>`를 반환해야 한다.
 - raw `FirebaseException`, 파싱 에러, 전송 에러를 그대로 throw하지 않는다.
 - 외부 실패는 `AppError`로 매핑한다.
-- UI는 `AppError`만 처리한다.
+- feature UI는 feature async 결과에서 `AppError`를 처리한다.
 
-구체적인 에러 카테고리와 매핑은 `docs/07_ERROR_POLICY.md`에서 다룬다.
+### Global/runtime error
+
+- 앱 전역/runtime 에러는 `ErrorHub` 흐름으로 처리한다.
+- root UI는 전역 에러 흐름에서 `ErrorDecision` 기반으로 반응한다.
+- feature 내부에서 전역 error stream을 직접 listen하지 않는다.
+
+구체적인 전역 에러 구조와 정책은 `docs/07_ERROR_POLICY.md`를 따른다.
+에러 처리의 전체 구조와 흐름은 `docs/01_ARCHITECTURE.md`를 참고한다.
 
 ## Provider 규칙
 
