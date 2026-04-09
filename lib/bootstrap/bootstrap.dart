@@ -27,6 +27,7 @@ import 'package:app_forge/engine/engine.dart';
 
 import '../app/app_config.dart';
 import '../app/app_features.dart';
+import '../features/auth/domain/auth_session.dart';
 import '../features/auth/state/auth_repository_provider.dart';
 import '../features/auth/state/auth_session_provider.dart';
 
@@ -48,7 +49,7 @@ class Bootstrap extends StatefulWidget {
 /// app 시작에 필요한 router와 notifier를 보관하는 state.
 class _BootstrapState extends State<Bootstrap> {
   late final NavigationStateNotifier _navigationNotifier;
-  late final ValueNotifier<AppAuthRedirectStatus> _authRedirectNotifier;
+  late final ValueNotifier<AuthSession> _authSessionNotifier;
   late final RouterEngine _routerEngine;
   late final GoRouter _router;
   late final ErrorHub _errorHub;
@@ -68,17 +69,15 @@ class _BootstrapState extends State<Bootstrap> {
         routes: appRoutes,
       ),
     );
-    // auth session provider bridge가 첫 값을 밀어주기 전까지는 unknown으로 둔다.
-    _authRedirectNotifier = ValueNotifier<AppAuthRedirectStatus>(
-      AppAuthRedirectStatus.unknown,
-    );
+    // auth session provider bridge가 첫 값을 밀어주기 전까지는 pending으로 둔다.
+    _authSessionNotifier = ValueNotifier<AuthSession>(const Pending());
     _routerEngine = RouterEngine(
       routes: appRouteTrees,
       initialLocation: appConfig.initialLocation,
       shellConfig: appConfig.shellConfig,
       navigationNotifier: _navigationNotifier,
       redirect: _handleAppRedirect,
-      refreshListenable: _authRedirectNotifier,
+      refreshListenable: _authSessionNotifier,
     );
     _router = _routerEngine.build();
   }
@@ -87,7 +86,7 @@ class _BootstrapState extends State<Bootstrap> {
   @override
   void dispose() {
     _router.dispose();
-    _authRedirectNotifier.dispose();
+    _authSessionNotifier.dispose();
     _navigationNotifier.dispose();
     super.dispose();
   }
@@ -98,7 +97,7 @@ class _BootstrapState extends State<Bootstrap> {
   /// app 전역 화면 접근 흐름도 함께 달라진다.
   String? _handleAppRedirect(BuildContext context, GoRouterState state) {
     return resolveAppRedirect(
-      authStatus: _authRedirectNotifier.value,
+      authSession: _authSessionNotifier.value,
       location: state.uri.toString(),
     );
   }
@@ -115,7 +114,7 @@ class _BootstrapState extends State<Bootstrap> {
         errorHub: _errorHub,
         child: _BootstrapView(
           router: _router,
-          authRedirectNotifier: _authRedirectNotifier,
+          authSessionNotifier: _authSessionNotifier,
           errorHub: _errorHub,
         ),
       ),
@@ -127,12 +126,12 @@ class _BootstrapState extends State<Bootstrap> {
 class _BootstrapView extends ConsumerStatefulWidget {
   const _BootstrapView({
     required this.router,
-    required this.authRedirectNotifier,
+    required this.authSessionNotifier,
     required this.errorHub,
   });
 
   final GoRouter router;
-  final ValueNotifier<AppAuthRedirectStatus> authRedirectNotifier;
+  final ValueNotifier<AuthSession> authSessionNotifier;
   final ErrorHub errorHub;
 
   @override
@@ -141,6 +140,7 @@ class _BootstrapView extends ConsumerStatefulWidget {
 
 /// app 전역 listener를 관리하는 state.
 class _BootstrapViewState extends ConsumerState<_BootstrapView> {
+  ProviderSubscription<AuthSession>? _authSessionSubscription;
   ProviderSubscription<AsyncValue<AuthSessionObservation>>?
   _authSessionObservationSubscription;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
@@ -156,6 +156,11 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   void initState() {
     super.initState();
 
+    _authSessionSubscription = ref.listenManual<AuthSession>(
+      authSessionProvider,
+      (_, next) => _handleAuthSessionChanged(next),
+      fireImmediately: true,
+    );
     _authSessionObservationSubscription = ref
         .listenManual<AsyncValue<AuthSessionObservation>>(
           authSessionObservationProvider,
@@ -169,20 +174,22 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   @override
   void dispose() {
     unawaited(_errorSubscription?.cancel());
+    _authSessionSubscription?.close();
     _authSessionObservationSubscription?.close();
     super.dispose();
   }
 
-  /// 단일 observation 입력으로 redirect와 강제 logout을 연결한다.
+  /// public auth session contract를 app redirect 입력으로 연결한다.
+  void _handleAuthSessionChanged(AuthSession authSession) {
+    if (widget.authSessionNotifier.value != authSession) {
+      widget.authSessionNotifier.value = authSession;
+    }
+  }
+
+  /// internal observation 입력으로 강제 logout wiring만 연결한다.
   void _handleAuthSessionObservationChanged(
     AsyncValue<AuthSessionObservation> observationValue,
   ) {
-    final nextStatus = _resolveRedirectStatus(observationValue);
-
-    if (widget.authRedirectNotifier.value != nextStatus) {
-      widget.authRedirectNotifier.value = nextStatus;
-    }
-
     if (observationValue case AsyncData<AuthSessionObservation>(
       value: final observation,
     )) {
@@ -190,40 +197,11 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
     }
   }
 
-  AppAuthRedirectStatus _resolveRedirectStatus(
-    AsyncValue<AuthSessionObservation> observationValue,
-  ) {
-    if (observationValue
-        case AsyncData<AuthSessionObservation>(value: final observation)
-        when observation.session != null &&
-            (!observation.hasResolvedUserDocumentState ||
-                !observation.hasResolvedAuthProviderState)) {
-      return AppAuthRedirectStatus.unknown;
-    }
-
-    if (observationValue case AsyncData<AuthSessionObservation>(
-      value: final observation,
-    ) when observation.invalidation != null) {
-      return AppAuthRedirectStatus.invalid;
-    }
-
-    return switch (observationValue) {
-      AsyncData<AuthSessionObservation>(value: final observation)
-          when observation.session != null =>
-        AppAuthRedirectStatus.authenticated,
-      AsyncData<AuthSessionObservation>() =>
-        AppAuthRedirectStatus.unauthenticated,
-      AsyncError<AuthSessionObservation>() =>
-        AppAuthRedirectStatus.unauthenticated,
-      _ => AppAuthRedirectStatus.unknown,
-    };
-  }
-
   /// 같은 session uid에 대한 강제 logout 중복 호출을 막는다.
   void _syncForcedLogout(AuthSessionObservation observation) {
     final invalidation = observation.invalidation;
 
-    if (observation.session == null || invalidation == null) {
+    if (observation.authenticated == null || invalidation == null) {
       _pendingForcedLogoutUid = null;
       return;
     }
@@ -258,10 +236,10 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   /// app root MaterialApp을 렌더링한다.
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<AppAuthRedirectStatus>(
-      valueListenable: widget.authRedirectNotifier,
-      builder: (context, authStatus, _) {
-        if (authStatus == AppAuthRedirectStatus.unknown) {
+    return ValueListenableBuilder<AuthSession>(
+      valueListenable: widget.authSessionNotifier,
+      builder: (context, authSession, _) {
+        if (authSession is Pending) {
           return MaterialApp(
             scaffoldMessengerKey: _scaffoldMessengerKey,
             title: appConfig.appTitle,

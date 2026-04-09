@@ -4,7 +4,7 @@
 /// Auth Session Provider
 ///
 /// 역할:
-/// - auth state layer의 provider로 FirebaseAuth session stream을 AuthSession 기준으로 노출함.
+/// - auth state layer의 provider로 FirebaseAuth session stream을 AuthSession contract로 노출함.
 ///
 /// 경계:
 /// - auth는 UI page를 소유하지 않음.
@@ -42,16 +42,16 @@ class AuthSessionInvalidation {
 /// auth session 관찰 경로의 현재 raw observation.
 class AuthSessionObservation {
   const AuthSessionObservation({
-    required this.session,
+    required this.authenticated,
     required this.invalidation,
-    required this.hasResolvedUserDocumentState,
-    required this.hasResolvedAuthProviderState,
+    required this.userReady,
+    required this.providerReady,
   });
 
-  final AuthSession? session;
+  final Authenticated? authenticated;
   final AuthSessionInvalidation? invalidation;
-  final bool hasResolvedUserDocumentState;
-  final bool hasResolvedAuthProviderState;
+  final bool userReady;
+  final bool providerReady;
 }
 
 typedef AuthProviderInvalidationWatcher =
@@ -63,7 +63,7 @@ final authSessionRecoveryInFlightCountProvider = StateProvider<int>((ref) {
 });
 
 /// auth session stream source provider.
-final authSessionStreamProvider = Provider<Stream<AuthSession?>>((ref) {
+final authSessionStreamProvider = Provider<Stream<Authenticated?>>((ref) {
   final firebaseAuth = ref.watch(firebaseAuthProvider);
 
   return watchAuthSessions(firebaseAuth).asBroadcastStream();
@@ -114,66 +114,40 @@ final authSessionObservationProvider = StreamProvider<AuthSessionObservation>((
   return ref.watch(authSessionObservationStreamProvider);
 });
 
-/// 현재 유효 auth session provider.
-final authSessionProvider = Provider<AsyncValue<AuthSession?>>((ref) {
+/// app이 공식적으로 소비하는 auth session public contract provider.
+final authSessionProvider = Provider<AuthSession>((ref) {
   return switch (ref.watch(authSessionObservationProvider)) {
-    AsyncData<AuthSessionObservation>(value: final observation)
-        when observation.session != null &&
-            (!observation.hasResolvedUserDocumentState ||
-                !observation.hasResolvedAuthProviderState) =>
-      const AsyncLoading<AuthSession?>(),
-    AsyncData<AuthSessionObservation>(value: final observation)
-        when observation.invalidation != null =>
-      const AsyncData<AuthSession?>(null),
     AsyncData<AuthSessionObservation>(value: final observation) =>
-      AsyncData<AuthSession?>(observation.session),
-    AsyncError<AuthSessionObservation>(:final error, :final stackTrace) =>
-      AsyncError<AuthSession?>(error, stackTrace),
-    _ => const AsyncLoading<AuthSession?>(),
+      _resolvePublicAuthSession(observation),
+    AsyncError<AuthSessionObservation>() => const Pending(),
+    _ => const Pending(),
   };
 });
 
-/// 현재 auth session invalidation signal provider.
-final authSessionInvalidationProvider =
-    Provider<AsyncValue<AuthSessionInvalidation?>>((ref) {
-      return switch (ref.watch(authSessionObservationProvider)) {
-        AsyncData<AuthSessionObservation>(value: final observation)
-            when observation.session != null &&
-                (!observation.hasResolvedUserDocumentState ||
-                    !observation.hasResolvedAuthProviderState) =>
-          const AsyncLoading<AuthSessionInvalidation?>(),
-        AsyncData<AuthSessionObservation>(value: final observation) =>
-          AsyncData<AuthSessionInvalidation?>(observation.invalidation),
-        AsyncError<AuthSessionObservation>(:final error, :final stackTrace) =>
-          AsyncError<AuthSessionInvalidation?>(error, stackTrace),
-        _ => const AsyncLoading<AuthSessionInvalidation?>(),
-      };
-    });
-
 Stream<AuthSessionObservation> _watchAuthSessionObservation({
-  required Stream<AuthSession?> authSessions,
+  required Stream<Authenticated?> authSessions,
   required UsersDocumentDataSource usersDataSource,
   required AuthProviderInvalidationWatcher watchAuthProviderInvalidation,
   required StateController<int> recoveryInFlightCount,
 }) {
   return Stream<AuthSessionObservation>.multi((controller) {
-    StreamSubscription<AuthSession?>? authSubscription;
+    StreamSubscription<Authenticated?>? authSubscription;
     StreamSubscription<UserDocumentServerState>? userStateSubscription;
     StreamSubscription<AuthSessionInvalidation?>?
     authProviderInvalidationSubscription;
-    AuthSession? currentSession;
+    Authenticated? currentSession;
     AuthSessionInvalidation? userDocumentInvalidation;
     AuthSessionInvalidation? authProviderInvalidation;
-    var hasResolvedUserDocumentState = true;
-    var hasResolvedAuthProviderState = true;
+    var userReady = true;
+    var providerReady = true;
 
     void emitObservation() {
       controller.add(
         AuthSessionObservation(
-          session: currentSession,
+          authenticated: currentSession,
           invalidation: authProviderInvalidation ?? userDocumentInvalidation,
-          hasResolvedUserDocumentState: hasResolvedUserDocumentState,
-          hasResolvedAuthProviderState: hasResolvedAuthProviderState,
+          userReady: userReady,
+          providerReady: providerReady,
         ),
       );
     }
@@ -198,14 +172,14 @@ Stream<AuthSessionObservation> _watchAuthSessionObservation({
         }
 
         if (session == null) {
-          hasResolvedUserDocumentState = true;
-          hasResolvedAuthProviderState = true;
+          userReady = true;
+          providerReady = true;
           emitObservation();
           return;
         }
 
-        hasResolvedUserDocumentState = false;
-        hasResolvedAuthProviderState = false;
+        userReady = false;
+        providerReady = false;
         emitObservation();
         userStateSubscription = usersDataSource
             .watchUserServerState(uid: session.uid)
@@ -214,13 +188,16 @@ Stream<AuthSessionObservation> _watchAuthSessionObservation({
                 session: session,
                 userState: userState,
               );
+              final recovering = recoveryInFlightCount.mounted
+                  ? recoveryInFlightCount.state > 0
+                  : false;
 
               final shouldHoldForRecovery =
-                  recoveryInFlightCount.state > 0 &&
+                  recovering &&
                   nextInvalidation?.reason ==
                       AuthSessionInvalidationReason.missingUserDocument;
 
-              hasResolvedUserDocumentState = !shouldHoldForRecovery;
+              userReady = !shouldHoldForRecovery;
               userDocumentInvalidation = shouldHoldForRecovery
                   ? null
                   : nextInvalidation;
@@ -228,7 +205,7 @@ Stream<AuthSessionObservation> _watchAuthSessionObservation({
             });
         authProviderInvalidationSubscription =
             watchAuthProviderInvalidation(session.uid).listen((invalidation) {
-              hasResolvedAuthProviderState = true;
+              providerReady = true;
               authProviderInvalidation = invalidation;
               emitObservation();
             });
@@ -250,7 +227,7 @@ Stream<AuthSessionObservation> _watchAuthSessionObservation({
 }
 
 AuthSessionInvalidation? _resolveUserDocumentInvalidation({
-  required AuthSession session,
+  required Authenticated session,
   required UserDocumentServerState userState,
 }) {
   if (!userState.exists) {
@@ -275,6 +252,34 @@ AuthSessionInvalidation? _resolveUserDocumentInvalidation({
   }
 
   return null;
+}
+
+AuthSession _resolvePublicAuthSession(AuthSessionObservation observation) {
+  if (observation.authenticated == null) {
+    return const Unauthenticated();
+  }
+
+  if (!observation.userReady || !observation.providerReady) {
+    return const Pending();
+  }
+
+  if (observation.invalidation != null) {
+    return Invalid(reason: _mapPublicInvalidReason(observation.invalidation!));
+  }
+
+  return observation.authenticated!;
+}
+
+InvalidReason _mapPublicInvalidReason(AuthSessionInvalidation invalidation) {
+  return switch (invalidation.reason) {
+    AuthSessionInvalidationReason.missingUserDocument ||
+    AuthSessionInvalidationReason.missingAuthProviderUser =>
+      InvalidReason.missingAccount,
+    AuthSessionInvalidationReason.blockedUser => InvalidReason.blocked,
+    AuthSessionInvalidationReason.disabledUser ||
+    AuthSessionInvalidationReason.disabledAuthProviderUser =>
+      InvalidReason.disabled,
+  };
 }
 
 Stream<AuthSessionInvalidation?> _watchAuthProviderInvalidation({

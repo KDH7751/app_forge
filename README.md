@@ -14,7 +14,7 @@ Feature를 추가하는 방식으로 확장되어야 한다.
 
 ## 현재 상태
 
-현재 Phase 3.4까지 완료되었다.
+현재 Phase 3.5까지 완료되었다.
 
 구현된 범위:
 
@@ -26,7 +26,7 @@ Feature를 추가하는 방식으로 확장되어야 한다.
 - Firebase bootstrap 진입 (`initializeApp`)
 - auth 기능 (login / signup / logout / reset / changePassword / deleteAccount)
 - auth / auth_entry 구조 분리
-- AuthSession provider
+- AuthSession public contract (`Authenticated / Unauthenticated / Invalid / Pending`)
 - app layer auth redirect
 - users/{uid} upsert 정책
 - Session Integrity (`users/{uid}` 부재 / blocked / disabled / auth provider server-side delete·disable 감지)
@@ -169,6 +169,7 @@ app 설정은 반드시 아래 3개 파일로 수렴한다.
 - Phase 3.2: 전역 에러 처리 시스템 도입 완료
 - Phase 3.3: post-login account action(changePassword / deleteAccount) 완료
 - Phase 3.4: Session Integrity 완료
+- Phase 3.5: AuthSession public contract stabilization 완료
 
 이 상태부터는
 

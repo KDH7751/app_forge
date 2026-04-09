@@ -62,7 +62,7 @@ void main() {
 
   testWidgets('authenticated app renders shell home route', (tester) async {
     final sessionSource = _FakeAuthSessionSource(
-      initialSession: const AuthSession(
+      initialSession: const Authenticated(
         uid: 'uid-1',
         email: 'user@example.com',
       ),
@@ -82,7 +82,7 @@ void main() {
     tester,
   ) async {
     final sessionSource = _FakeAuthSessionSource(
-      initialSession: const AuthSession(
+      initialSession: const Authenticated(
         uid: 'uid-1',
         email: 'user@example.com',
       ),
@@ -110,7 +110,7 @@ void main() {
     tester,
   ) async {
     final sessionSource = _FakeAuthSessionSource(
-      initialSession: const AuthSession(
+      initialSession: const Authenticated(
         uid: 'uid-1',
         email: 'user@example.com',
       ),
@@ -228,7 +228,7 @@ void main() {
     'authenticated home page button navigates to param detail route',
     (tester) async {
       final sessionSource = _FakeAuthSessionSource(
-        initialSession: const AuthSession(
+        initialSession: const Authenticated(
           uid: 'uid-1',
           email: 'user@example.com',
         ),
@@ -251,7 +251,7 @@ void main() {
 
   testWidgets('profile logout redirects back to login route', (tester) async {
     final sessionSource = _FakeAuthSessionSource(
-      initialSession: const AuthSession(
+      initialSession: const Authenticated(
         uid: 'uid-1',
         email: 'user@example.com',
       ),
@@ -339,11 +339,206 @@ void main() {
     expect(find.byType(SnackBar), findsNothing);
   });
 
+  test(
+    'authSessionProvider exposes Unauthenticated without a session',
+    () async {
+      final sessionSource = _FakeAuthSessionSource();
+      final container = _buildAuthContainer(sessionSource: sessionSource);
+      addTearDown(sessionSource.dispose);
+      addTearDown(container.dispose);
+
+      expect(
+        await _waitForAuthSession(
+          container,
+          (session) => session is Unauthenticated,
+        ),
+        const Unauthenticated(),
+      );
+    },
+  );
+
+  test(
+    'authSessionProvider exposes Pending while session integrity is still resolving',
+    () async {
+      final sessionSource = _FakeAuthSessionSource(
+        initialSession: const Authenticated(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final userStateSource = _FakeUserDocumentStateSource();
+      final container = _buildAuthContainer(
+        sessionSource: sessionSource,
+        userStateSource: userStateSource,
+      );
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+      addTearDown(container.dispose);
+
+      expect(
+        await _waitForAuthSession(container, (session) => session is Pending),
+        const Pending(),
+      );
+    },
+  );
+
+  test(
+    'authSessionProvider exposes Authenticated for a valid session',
+    () async {
+      final sessionSource = _FakeAuthSessionSource(
+        initialSession: const Authenticated(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final userStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      final container = _buildAuthContainer(
+        sessionSource: sessionSource,
+        userStateSource: userStateSource,
+      );
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+      addTearDown(container.dispose);
+
+      expect(
+        await _waitForAuthSession(
+          container,
+          (session) => session is Authenticated,
+        ),
+        const Authenticated(uid: 'uid-1', email: 'user@example.com'),
+      );
+    },
+  );
+
+  test(
+    'authSessionProvider maps raw invalidation to public InvalidReason',
+    () async {
+      final missingAccountSessionSource = _FakeAuthSessionSource(
+        initialSession: const Authenticated(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final missingAccountUserStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: false,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      final missingAccountContainer = _buildAuthContainer(
+        sessionSource: missingAccountSessionSource,
+        userStateSource: missingAccountUserStateSource,
+      );
+      final blockedSessionSource = _FakeAuthSessionSource(
+        initialSession: const Authenticated(
+          uid: 'uid-2',
+          email: 'blocked@example.com',
+        ),
+      );
+      final blockedUserStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: true,
+          isBlocked: true,
+          isDisabled: false,
+        ),
+      );
+      final blockedContainer = _buildAuthContainer(
+        sessionSource: blockedSessionSource,
+        userStateSource: blockedUserStateSource,
+      );
+      final disabledSessionSource = _FakeAuthSessionSource(
+        initialSession: const Authenticated(
+          uid: 'uid-3',
+          email: 'disabled@example.com',
+        ),
+      );
+      final disabledUserStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      final disabledAuthProviderInvalidationSource =
+          _FakeAuthProviderInvalidationSource(
+            initialState: const AuthSessionInvalidation(
+              uid: 'uid-3',
+              reason: AuthSessionInvalidationReason.disabledAuthProviderUser,
+            ),
+          );
+      final disabledContainer = _buildAuthContainer(
+        sessionSource: disabledSessionSource,
+        userStateSource: disabledUserStateSource,
+        authProviderInvalidationSource: disabledAuthProviderInvalidationSource,
+      );
+      addTearDown(missingAccountSessionSource.dispose);
+      addTearDown(missingAccountUserStateSource.dispose);
+      addTearDown(blockedSessionSource.dispose);
+      addTearDown(blockedUserStateSource.dispose);
+      addTearDown(disabledSessionSource.dispose);
+      addTearDown(disabledUserStateSource.dispose);
+      addTearDown(disabledAuthProviderInvalidationSource.dispose);
+      addTearDown(missingAccountContainer.dispose);
+      addTearDown(blockedContainer.dispose);
+      addTearDown(disabledContainer.dispose);
+
+      expect(
+        await _waitForAuthSession(
+          missingAccountContainer,
+          (session) => session is Invalid,
+        ),
+        const Invalid(reason: InvalidReason.missingAccount),
+      );
+      expect(
+        await _waitForAuthSession(
+          blockedContainer,
+          (session) => session is Invalid,
+        ),
+        const Invalid(reason: InvalidReason.blocked),
+      );
+      expect(
+        await _waitForAuthSession(
+          disabledContainer,
+          (session) => session is Invalid,
+        ),
+        const Invalid(reason: InvalidReason.disabled),
+      );
+    },
+  );
+
+  test(
+    'authSessionProvider keeps observation errors in Pending instead of downgrading to Unauthenticated',
+    () async {
+      final container = ProviderContainer(
+        overrides: <Override>[
+          authSessionObservationStreamProvider.overrideWithValue(
+            Stream<AuthSessionObservation>.error(
+              StateError('observation error'),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        await _waitForAuthSession(container, (session) => session is Pending),
+        const Pending(),
+      );
+    },
+  );
+
   testWidgets(
     'authenticated session waits for first user document state before rendering protected route',
     (tester) async {
       final sessionSource = _FakeAuthSessionSource(
-        initialSession: const AuthSession(
+        initialSession: const Authenticated(
           uid: 'uid-1',
           email: 'user@example.com',
         ),
@@ -471,7 +666,7 @@ void main() {
     'invalid session redirects to login before forced logout completes',
     (tester) async {
       final sessionSource = _FakeAuthSessionSource(
-        initialSession: const AuthSession(
+        initialSession: const Authenticated(
           uid: 'uid-1',
           email: 'user@example.com',
         ),
@@ -529,7 +724,7 @@ void main() {
     'blocked server account is treated as invalid and redirects to login',
     (tester) async {
       final sessionSource = _FakeAuthSessionSource(
-        initialSession: const AuthSession(
+        initialSession: const Authenticated(
           uid: 'uid-1',
           email: 'user@example.com',
         ),
@@ -565,7 +760,7 @@ void main() {
     'forced logout runs once even if invalid reason changes before logout completes',
     (tester) async {
       final sessionSource = _FakeAuthSessionSource(
-        initialSession: const AuthSession(
+        initialSession: const Authenticated(
           uid: 'uid-1',
           email: 'user@example.com',
         ),
@@ -626,7 +821,7 @@ void main() {
     'manual users document deletion invalidates the session but does not delete the auth account',
     (tester) async {
       final sessionSource = _FakeAuthSessionSource(
-        initialSession: const AuthSession(
+        initialSession: const Authenticated(
           uid: 'uid-1',
           email: 'user@example.com',
         ),
@@ -685,7 +880,7 @@ void main() {
     'auth provider disabled account is treated as invalid and redirects to login',
     (tester) async {
       final sessionSource = _FakeAuthSessionSource(
-        initialSession: const AuthSession(
+        initialSession: const Authenticated(
           uid: 'uid-1',
           email: 'user@example.com',
         ),
@@ -729,7 +924,7 @@ void main() {
     'auth provider deleted account is treated as invalid and redirects to login',
     (tester) async {
       final sessionSource = _FakeAuthSessionSource(
-        initialSession: const AuthSession(
+        initialSession: const Authenticated(
           uid: 'uid-1',
           email: 'user@example.com',
         ),
@@ -777,6 +972,26 @@ Bootstrap _buildBootstrap(
   return _buildBootstrapWithUserState(repository, sessionSource, null, null);
 }
 
+ProviderContainer _buildAuthContainer({
+  required _FakeAuthSessionSource sessionSource,
+  _FakeUserDocumentStateSource? userStateSource,
+  _FakeAuthProviderInvalidationSource? authProviderInvalidationSource,
+}) {
+  return ProviderContainer(
+    overrides: <Override>[
+      authSessionStreamProvider.overrideWithValue(sessionSource.stream),
+      usersDocumentDataSourceProvider.overrideWithValue(
+        _FakeUsersDocumentDataSource(userStateSource),
+      ),
+      authProviderInvalidationWatcherProvider.overrideWithValue(
+        (uid) =>
+            authProviderInvalidationSource?.stream ??
+            Stream<AuthSessionInvalidation?>.value(null),
+      ),
+    ],
+  );
+}
+
 Bootstrap _buildBootstrapWithUserState(
   _FakeAuthRepository repository,
   _FakeAuthSessionSource sessionSource,
@@ -804,21 +1019,21 @@ Bootstrap _buildBootstrapWithUserState(
 }
 
 class _FakeAuthSessionSource {
-  _FakeAuthSessionSource({AuthSession? initialSession})
+  _FakeAuthSessionSource({Authenticated? initialSession})
     : _currentSession = initialSession;
 
-  final StreamController<AuthSession?> _controller =
-      StreamController<AuthSession?>.broadcast();
-  AuthSession? _currentSession;
+  final StreamController<Authenticated?> _controller =
+      StreamController<Authenticated?>.broadcast();
+  Authenticated? _currentSession;
 
-  AuthSession? get currentSession => _currentSession;
+  Authenticated? get currentSession => _currentSession;
 
-  Stream<AuthSession?> get stream async* {
+  Stream<Authenticated?> get stream async* {
     yield _currentSession;
     yield* _controller.stream;
   }
 
-  void setSession(AuthSession? session) {
+  void setSession(Authenticated? session) {
     _currentSession = session;
     _controller.add(session);
   }
@@ -929,7 +1144,7 @@ class _FakeAuthRepository implements AuthRepository {
     }
 
     _persistedAuthEmails.add(email);
-    _sessionSource.setSession(AuthSession(uid: 'uid-1', email: email));
+    _sessionSource.setSession(Authenticated(uid: 'uid-1', email: email));
 
     if (recreateUserDocumentOnLogin) {
       unawaited(
@@ -958,7 +1173,7 @@ class _FakeAuthRepository implements AuthRepository {
     }
 
     _persistedAuthEmails.add(email);
-    _sessionSource.setSession(AuthSession(uid: 'uid-2', email: email));
+    _sessionSource.setSession(Authenticated(uid: 'uid-2', email: email));
 
     return const Result<void>.success(null);
   }
@@ -1041,4 +1256,23 @@ class _NoopLogger implements Logger {
 
   @override
   void log(ErrorEnvelope error, ErrorSeverity severity) {}
+}
+
+Future<AuthSession> _waitForAuthSession(
+  ProviderContainer container,
+  bool Function(AuthSession session) predicate,
+) async {
+  final completer = Completer<AuthSession>();
+  late final ProviderSubscription<AuthSession> subscription;
+  subscription = container.listen<AuthSession>(authSessionProvider, (_, next) {
+    if (!completer.isCompleted && predicate(next)) {
+      completer.complete(next);
+    }
+  }, fireImmediately: true);
+
+  try {
+    return await completer.future.timeout(const Duration(seconds: 1));
+  } finally {
+    subscription.close();
+  }
 }

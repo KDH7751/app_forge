@@ -15,6 +15,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:app_forge/engine/engine.dart';
+import 'package:app_forge/features/auth/domain/auth_session.dart';
 import 'package:app_forge/features/auth/state/auth_error_mapper.dart';
 import 'package:app_forge/features/auth_entry/state/auth_entry_notice.dart';
 import 'package:app_forge/features/auth_entry/ui/login_page.dart';
@@ -23,12 +24,6 @@ import 'package:app_forge/features/auth_entry/ui/signup_page.dart';
 import '../features/home/ui/home_page.dart';
 import '../features/posts/ui/post_detail_page.dart';
 import '../features/profile/ui/profile_page.dart';
-
-/// app redirect 판단에 필요한 최소 auth 상태.
-///
-/// 이 상태 값이 바뀌면
-/// app 전역 화면 접근 흐름도 함께 달라진다.
-enum AppAuthRedirectStatus { unknown, authenticated, unauthenticated, invalid }
 
 /// 이 앱이 실제로 활성화하는 feature 목록.
 ///
@@ -150,10 +145,10 @@ final appErrorNotificationTextMappers = <String? Function(Object?)>[
 /// 로그인 사용자는 login / signup 같은 공개 진입 화면에 머물지 않게 만든다.
 /// 공개 route 목록을 바꾸면 app 전체 인증 진입 흐름도 함께 달라진다.
 String? resolveAppRedirect({
-  required AppAuthRedirectStatus authStatus,
+  required AuthSession authSession,
   required String location,
 }) {
-  if (authStatus == AppAuthRedirectStatus.unknown) {
+  if (authSession is Pending) {
     return null;
   }
 
@@ -167,17 +162,15 @@ String? resolveAppRedirect({
     normalizedLocation,
   );
 
-  if (authStatus == AppAuthRedirectStatus.unauthenticated &&
-      !isPublicAuthEntryRoute) {
+  if (authSession is Unauthenticated && !isPublicAuthEntryRoute) {
     return '/login';
   }
 
-  if (authStatus == AppAuthRedirectStatus.invalid && !isPublicAuthEntryRoute) {
+  if (authSession is Invalid && !isPublicAuthEntryRoute) {
     return '/login';
   }
 
-  if (authStatus == AppAuthRedirectStatus.authenticated &&
-      isPublicAuthEntryRoute) {
+  if (authSession is Authenticated && isPublicAuthEntryRoute) {
     return '/home';
   }
 

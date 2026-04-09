@@ -132,8 +132,14 @@ auth_entry feature는 auth provider를 소비하지만 redirect는 직접 처리
 - RouterEngine은 redirect callback과 `refreshListenable`만 소비한다.
 - redirect는 인증 상태와 현재 location을 기준으로 판단한다.
 - redirect는 에러를 해석하거나 UI를 제어하는 책임을 가지지 않는다.
+- redirect는 internal flag가 아니라 최종 `AuthSession` public contract만 소비한다.
 - invalid session 차단도 app layer redirect 판단에 포함되며, RouterEngine이 auth policy를 직접 해석하지 않는다.
 - bootstrap은 auth session observation 변화를 `refreshListenable`로 bridge하는 runtime wiring만 담당한다.
+- `Authenticated`는 보호 라우트를 허용한다.
+- `Unauthenticated`는 public auth entry로 보낸다.
+- `Invalid`는 public auth entry로 이탈시키고 강제 logout 흐름과 연결된다.
+- `Pending`은 placeholder 대기 상태로 두고 목적지 확정을 보류한다.
+- observation `AsyncError`는 `Unauthenticated`로 강등하지 않고 `Pending`으로 유지한다.
 - invalid 감지 시 보호 라우트는 즉시 public auth entry로 이탈하며, signOut 완료를 기다리지 않는다.
 - login/signup 직후 첫 `users/{uid}` 확인 전에는 pending 구간이 있을 수 있지만, 이 구간은 보호 라우트 허용 완화가 아니라 placeholder 대기 상태로 처리한다.
 

@@ -106,3 +106,24 @@
 - 2026-04-09: 기존 auth provider 계정은 살아 있고 `users/{uid}` 문서만 없는 경우, 첫 login/signup 시도 안에서 문서 복구와 정상 진입이 함께 닫히도록 `missingUserDocument` invalidation만 recovery in-flight 동안 일시 보류한다.
 - 2026-04-09: Firestore `users/{uid}` 문서 삭제로 인한 invalid + logout은 세션 무효화 대응이지 실제 계정 삭제 성공 의미가 아니다.
 - 2026-04-09: 실제 계정 삭제 성공 의미는 계속 Phase 3.3의 `auth provider delete + users/{uid} delete` 정의에만 있다. 따라서 Firestore 문서만 수동 삭제된 경우 재가입 불가(`emailAlreadyInUse`)는 정상 결과로 본다.
+
+## Phase 3.5 auth session contract stabilization
+
+- 2026-04-09: Phase 3.5에서는 외부 노출 session public contract 최상위 이름을 계속 `AuthSession`으로 유지한다.
+- 2026-04-09: `AuthSession` public contract는 상태별 타입 분리 구조로 고정하고, enum + nullable payload 묶음 방식으로 되돌리지 않는다.
+- 2026-04-09: public 최상위 상태는 `Authenticated`, `Unauthenticated`, `Invalid`, `Pending`으로 고정한다.
+- 2026-04-09: `unknown`은 public contract에서 제거하고 `Pending`으로 흡수한다.
+- 2026-04-09: `recovery`는 최상위 public 상태가 아니라 internal 처리 상태로 유지한다.
+- 2026-04-09: 첫 `users/{uid}` 판정 전, auth provider probe 판정 전, recovery in-flight로 인해 `missingUserDocument` 판정이 일시 보류된 상태는 모두 public contract에서 `Pending`으로 수렴한다.
+- 2026-04-09: redirect는 internal flag를 직접 보지 않고 최종 `AuthSession` 상태만 소비한다.
+- 2026-04-09: `Authenticated`는 보호 라우트를 허용하고, `Unauthenticated`는 public auth entry로 보낸다.
+- 2026-04-09: `Invalid`는 public auth entry로 이탈시키고 강제 logout 흐름과 연결한다.
+- 2026-04-09: `Pending`은 placeholder 대기 상태로 두고 목적지 확정을 보류한다.
+- 2026-04-09: observation `AsyncError`는 `Unauthenticated`로 강등하지 않고 `Pending`으로 유지한다.
+- 2026-04-09: public invalid reason 타입 이름은 `InvalidReason`으로 고정하고 값은 `missingAccount`, `blocked`, `disabled`만 사용한다.
+- 2026-04-09: internal raw invalidation reason은 `missingUserDocument -> missingAccount`, `missingAuthProviderUser -> missingAccount`, `blockedUser -> blocked`, `disabledUser -> disabled`, `disabledAuthProviderUser -> disabled`로 public reason에 매핑한다.
+- 2026-04-09: `Authenticated` payload는 `uid`, `email`만 가진다.
+- 2026-04-09: `Unauthenticated`와 `Pending`은 추가 payload를 가지지 않는다.
+- 2026-04-09: `Invalid`는 public `reason`만 가지며 `uid`, `email`은 노출하지 않는다.
+- 2026-04-09: profile/domain 성격의 데이터는 `AuthSession` public contract에 넣지 않는다.
+- 2026-04-09: `userReady`, `providerReady`, `recovering`, `pendingReason`, recovery counter, polling wiring, 세부 raw invalidation reason은 internal only로 유지한다.

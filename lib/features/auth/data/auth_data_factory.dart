@@ -44,7 +44,7 @@ AuthRepository createAuthRepository({
 }
 
 /// auth data layer의 session stream adapter.
-Stream<AuthSession?> watchAuthSessions(FirebaseAuth firebaseAuth) {
+Stream<Authenticated?> watchAuthSessions(FirebaseAuth firebaseAuth) {
   return firebaseAuth.authStateChanges().map((user) {
     final email = user?.email;
 
@@ -52,6 +52,6 @@ Stream<AuthSession?> watchAuthSessions(FirebaseAuth firebaseAuth) {
       return null;
     }
 
-    return AuthSession(uid: user.uid, email: email);
+    return Authenticated(uid: user.uid, email: email);
   });
 }
