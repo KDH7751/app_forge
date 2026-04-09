@@ -14,6 +14,7 @@ import 'package:app_forge/features/auth/domain/auth_validation.dart';
 import 'package:app_forge/features/auth/domain/change_password_input.dart';
 import 'package:app_forge/features/auth/domain/delete_account_input.dart';
 import 'package:app_forge/features/auth/domain/result.dart';
+import 'package:app_forge/features/auth/data/users_document_datasource.dart';
 import 'package:app_forge/features/auth/state/auth_repository_provider.dart';
 import 'package:app_forge/features/auth/state/auth_session_provider.dart';
 
@@ -156,6 +157,49 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 
+  testWidgets(
+    'missing users document for an existing auth account recovers and enters on the first login attempt',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource();
+      final userStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: false,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      final repository = _FakeAuthRepository(
+        sessionSource: sessionSource,
+        persistedAuthEmails: <String>{'user@example.com'},
+        linkedUserStateSource: userStateSource,
+        recreateUserDocumentOnLogin: true,
+      );
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
+      await tester.enterText(find.byType(TextField).at(1), 'password123');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Login'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(repository.loginCalls, 1);
+      expect(find.text('Phase 2 Home Route'), findsOneWidget);
+      expect(find.text('Email'), findsNothing);
+    },
+  );
+
   testWidgets('signup page submits and redirect moves to home route', (
     tester,
   ) async {
@@ -294,11 +338,450 @@ void main() {
     expect(find.text('네트워크 문제로 요청을 처리할 수 없습니다'), findsNothing);
     expect(find.byType(SnackBar), findsNothing);
   });
+
+  testWidgets(
+    'authenticated session waits for first user document state before rendering protected route',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource(
+        initialSession: const AuthSession(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final userStateSource = _FakeUserDocumentStateSource();
+      final repository = _FakeAuthRepository(sessionSource: sessionSource);
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          null,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Phase 2 Home Route'), findsNothing);
+      expect(find.text('Email'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      userStateSource.setState(
+        const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Phase 2 Home Route'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'login keeps a loading placeholder instead of a blank screen until first user document state',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource();
+      final userStateSource = _FakeUserDocumentStateSource();
+      final repository = _FakeAuthRepository(sessionSource: sessionSource);
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).at(0), 'user@example.com');
+      await tester.enterText(find.byType(TextField).at(1), 'password123');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Login'));
+      await tester.pump();
+
+      expect(find.text('Phase 2 Home Route'), findsNothing);
+      expect(find.text('Email'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      userStateSource.setState(
+        const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Phase 2 Home Route'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'signup keeps a loading placeholder instead of a blank screen until first user document state',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource();
+      final userStateSource = _FakeUserDocumentStateSource();
+      final repository = _FakeAuthRepository(sessionSource: sessionSource);
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Create account'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(0), 'new@example.com');
+      await tester.enterText(find.byType(TextField).at(1), 'password123');
+      await tester.enterText(find.byType(TextField).at(2), 'password123');
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+      await tester.pump();
+
+      expect(find.text('Phase 2 Home Route'), findsNothing);
+      expect(find.text('Email'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      userStateSource.setState(
+        const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Phase 2 Home Route'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'invalid session redirects to login before forced logout completes',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource(
+        initialSession: const AuthSession(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final userStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      final logoutCompleter = Completer<void>();
+      final repository = _FakeAuthRepository(
+        sessionSource: sessionSource,
+        logoutCompleter: logoutCompleter,
+      );
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Phase 2 Home Route'), findsOneWidget);
+
+      userStateSource.setState(
+        const UserDocumentServerState(
+          exists: false,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Email'), findsOneWidget);
+      expect(repository.logoutCalls, 1);
+      expect(repository.deleteAccountCalls, 0);
+      expect(sessionSource.currentSession, isNotNull);
+
+      logoutCompleter.complete();
+      await tester.pumpAndSettle();
+
+      expect(sessionSource.currentSession, isNull);
+    },
+  );
+
+  testWidgets(
+    'blocked server account is treated as invalid and redirects to login',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource(
+        initialSession: const AuthSession(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final userStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: true,
+          isBlocked: true,
+          isDisabled: false,
+        ),
+      );
+      final repository = _FakeAuthRepository(sessionSource: sessionSource);
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Email'), findsOneWidget);
+      expect(repository.logoutCalls, 1);
+      expect(repository.deleteAccountCalls, 0);
+    },
+  );
+
+  testWidgets(
+    'forced logout runs once even if invalid reason changes before logout completes',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource(
+        initialSession: const AuthSession(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final userStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      final logoutCompleter = Completer<void>();
+      final repository = _FakeAuthRepository(
+        sessionSource: sessionSource,
+        logoutCompleter: logoutCompleter,
+      );
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      userStateSource.setState(
+        const UserDocumentServerState(
+          exists: false,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      userStateSource.setState(
+        const UserDocumentServerState(
+          exists: true,
+          isBlocked: true,
+          isDisabled: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(repository.logoutCalls, 1);
+
+      logoutCompleter.complete();
+      await tester.pumpAndSettle();
+
+      expect(sessionSource.currentSession, isNull);
+    },
+  );
+
+  testWidgets(
+    'manual users document deletion invalidates the session but does not delete the auth account',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource(
+        initialSession: const AuthSession(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final userStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      final repository = _FakeAuthRepository(
+        sessionSource: sessionSource,
+        persistedAuthEmails: <String>{'user@example.com'},
+      );
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          null,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      userStateSource.setState(
+        const UserDocumentServerState(
+          exists: false,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Email'), findsOneWidget);
+      expect(repository.logoutCalls, 1);
+      expect(repository.deleteAccountCalls, 0);
+
+      final signupResult = await repository.signup(
+        email: 'user@example.com',
+        password: 'password123',
+      );
+
+      expect(signupResult, isA<Failure<void>>());
+      expect(
+        (signupResult as Failure<void>).error.type,
+        AppErrorType.emailAlreadyInUse,
+      );
+    },
+  );
+
+  testWidgets(
+    'auth provider disabled account is treated as invalid and redirects to login',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource(
+        initialSession: const AuthSession(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final userStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      final authProviderInvalidationSource =
+          _FakeAuthProviderInvalidationSource(
+            initialState: const AuthSessionInvalidation(
+              uid: 'uid-1',
+              reason: AuthSessionInvalidationReason.disabledAuthProviderUser,
+            ),
+          );
+      final repository = _FakeAuthRepository(sessionSource: sessionSource);
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+      addTearDown(authProviderInvalidationSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          authProviderInvalidationSource,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Email'), findsOneWidget);
+      expect(repository.logoutCalls, 1);
+      expect(repository.deleteAccountCalls, 0);
+    },
+  );
+
+  testWidgets(
+    'auth provider deleted account is treated as invalid and redirects to login',
+    (tester) async {
+      final sessionSource = _FakeAuthSessionSource(
+        initialSession: const AuthSession(
+          uid: 'uid-1',
+          email: 'user@example.com',
+        ),
+      );
+      final userStateSource = _FakeUserDocumentStateSource(
+        initialState: const UserDocumentServerState(
+          exists: true,
+          isBlocked: false,
+          isDisabled: false,
+        ),
+      );
+      final authProviderInvalidationSource =
+          _FakeAuthProviderInvalidationSource(
+            initialState: const AuthSessionInvalidation(
+              uid: 'uid-1',
+              reason: AuthSessionInvalidationReason.missingAuthProviderUser,
+            ),
+          );
+      final repository = _FakeAuthRepository(sessionSource: sessionSource);
+      addTearDown(sessionSource.dispose);
+      addTearDown(userStateSource.dispose);
+      addTearDown(authProviderInvalidationSource.dispose);
+
+      await tester.pumpWidget(
+        _buildBootstrapWithUserState(
+          repository,
+          sessionSource,
+          userStateSource,
+          authProviderInvalidationSource,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Email'), findsOneWidget);
+      expect(repository.logoutCalls, 1);
+      expect(repository.deleteAccountCalls, 0);
+    },
+  );
 }
 
 Bootstrap _buildBootstrap(
   _FakeAuthRepository repository,
   _FakeAuthSessionSource sessionSource,
+) {
+  return _buildBootstrapWithUserState(repository, sessionSource, null, null);
+}
+
+Bootstrap _buildBootstrapWithUserState(
+  _FakeAuthRepository repository,
+  _FakeAuthSessionSource sessionSource,
+  _FakeUserDocumentStateSource? userStateSource,
+  _FakeAuthProviderInvalidationSource? authProviderInvalidationSource,
 ) {
   return Bootstrap(
     errorHub: ErrorHub(
@@ -308,6 +791,14 @@ Bootstrap _buildBootstrap(
     overrides: <Override>[
       authRepositoryProvider.overrideWithValue(repository),
       authSessionStreamProvider.overrideWithValue(sessionSource.stream),
+      usersDocumentDataSourceProvider.overrideWithValue(
+        _FakeUsersDocumentDataSource(userStateSource),
+      ),
+      authProviderInvalidationWatcherProvider.overrideWithValue(
+        (uid) =>
+            authProviderInvalidationSource?.stream ??
+            Stream<AuthSessionInvalidation?>.value(null),
+      ),
     ],
   );
 }
@@ -319,6 +810,8 @@ class _FakeAuthSessionSource {
   final StreamController<AuthSession?> _controller =
       StreamController<AuthSession?>.broadcast();
   AuthSession? _currentSession;
+
+  AuthSession? get currentSession => _currentSession;
 
   Stream<AuthSession?> get stream async* {
     yield _currentSession;
@@ -335,25 +828,122 @@ class _FakeAuthSessionSource {
   }
 }
 
+class _FakeUserDocumentStateSource {
+  _FakeUserDocumentStateSource({UserDocumentServerState? initialState})
+    : _currentState = initialState;
+
+  final StreamController<UserDocumentServerState> _controller =
+      StreamController<UserDocumentServerState>.broadcast();
+  UserDocumentServerState? _currentState;
+
+  Stream<UserDocumentServerState> get stream async* {
+    final currentState = _currentState;
+
+    if (currentState != null) {
+      yield currentState;
+    }
+
+    yield* _controller.stream;
+  }
+
+  void setState(UserDocumentServerState state) {
+    _currentState = state;
+    _controller.add(state);
+  }
+
+  Future<void> dispose() async {
+    await _controller.close();
+  }
+}
+
+class _FakeUsersDocumentDataSource extends UsersDocumentDataSource {
+  _FakeUsersDocumentDataSource(this._source) : super();
+
+  final _FakeUserDocumentStateSource? _source;
+
+  @override
+  Stream<UserDocumentServerState> watchUserServerState({required String uid}) {
+    return _source?.stream ??
+        Stream<UserDocumentServerState>.value(
+          const UserDocumentServerState(
+            exists: true,
+            isBlocked: false,
+            isDisabled: false,
+          ),
+        );
+  }
+}
+
+class _FakeAuthProviderInvalidationSource {
+  _FakeAuthProviderInvalidationSource({AuthSessionInvalidation? initialState})
+    : _currentState = initialState;
+
+  final StreamController<AuthSessionInvalidation?> _controller =
+      StreamController<AuthSessionInvalidation?>.broadcast();
+  AuthSessionInvalidation? _currentState;
+
+  Stream<AuthSessionInvalidation?> get stream async* {
+    yield _currentState;
+    yield* _controller.stream;
+  }
+
+  void setState(AuthSessionInvalidation? state) {
+    _currentState = state;
+    _controller.add(state);
+  }
+
+  Future<void> dispose() async {
+    await _controller.close();
+  }
+}
+
 class _FakeAuthRepository implements AuthRepository {
   _FakeAuthRepository({
     required _FakeAuthSessionSource sessionSource,
     this.loginResult,
-  }) : _sessionSource = sessionSource;
+    this.logoutCompleter,
+    Set<String>? persistedAuthEmails,
+    this.linkedUserStateSource,
+    this.recreateUserDocumentOnLogin = false,
+  }) : _sessionSource = sessionSource,
+       _persistedAuthEmails = persistedAuthEmails ?? <String>{};
 
   final _FakeAuthSessionSource _sessionSource;
   final Result<void>? loginResult;
+  final Completer<void>? logoutCompleter;
+  final Set<String> _persistedAuthEmails;
+  final _FakeUserDocumentStateSource? linkedUserStateSource;
+  final bool recreateUserDocumentOnLogin;
+  int loginCalls = 0;
+  int logoutCalls = 0;
+  int deleteAccountCalls = 0;
 
   @override
   Future<Result<void>> login({
     required String email,
     required String password,
   }) async {
+    loginCalls += 1;
     if (loginResult != null) {
       return loginResult!;
     }
 
+    _persistedAuthEmails.add(email);
     _sessionSource.setSession(AuthSession(uid: 'uid-1', email: email));
+
+    if (recreateUserDocumentOnLogin) {
+      unawaited(
+        Future<void>.microtask(() {
+          linkedUserStateSource?.setState(
+            const UserDocumentServerState(
+              exists: true,
+              isBlocked: false,
+              isDisabled: false,
+            ),
+          );
+        }),
+      );
+    }
 
     return const Result<void>.success(null);
   }
@@ -363,6 +953,11 @@ class _FakeAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
+    if (_persistedAuthEmails.contains(email)) {
+      return const Result<void>.failure(AppError.emailAlreadyInUse);
+    }
+
+    _persistedAuthEmails.add(email);
     _sessionSource.setSession(AuthSession(uid: 'uid-2', email: email));
 
     return const Result<void>.success(null);
@@ -370,6 +965,11 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<Result<void>> logout() async {
+    logoutCalls += 1;
+    if (logoutCompleter != null) {
+      await logoutCompleter!.future;
+    }
+
     _sessionSource.setSession(null);
 
     return const Result<void>.success(null);
@@ -387,6 +987,13 @@ class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<Result<void>> deleteAccount(DeleteAccountInput input) async {
+    deleteAccountCalls += 1;
+    final currentEmail = _sessionSource.currentSession?.email;
+
+    if (currentEmail != null) {
+      _persistedAuthEmails.remove(currentEmail);
+    }
+
     _sessionSource.setSession(null);
 
     return const Result<void>.success(null);

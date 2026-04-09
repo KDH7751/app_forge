@@ -27,7 +27,7 @@ import 'package:app_forge/engine/engine.dart';
 
 import '../app/app_config.dart';
 import '../app/app_features.dart';
-import '../features/auth/domain/auth_session.dart';
+import '../features/auth/state/auth_repository_provider.dart';
 import '../features/auth/state/auth_session_provider.dart';
 
 /// app root runtime 연결을 시작하는 host widget.
@@ -141,10 +141,12 @@ class _BootstrapView extends ConsumerStatefulWidget {
 
 /// app 전역 listener를 관리하는 state.
 class _BootstrapViewState extends ConsumerState<_BootstrapView> {
-  ProviderSubscription<AsyncValue<AuthSession?>>? _authSessionSubscription;
+  ProviderSubscription<AsyncValue<AuthSessionObservation>>?
+  _authSessionObservationSubscription;
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
   StreamSubscription<ErrorEvent>? _errorSubscription;
+  String? _pendingForcedLogoutUid;
 
   /// auth 상태와 ErrorHub stream을 앱 시작 시 바로 연결한다.
   ///
@@ -154,11 +156,12 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   void initState() {
     super.initState();
 
-    _authSessionSubscription = ref.listenManual<AsyncValue<AuthSession?>>(
-      authSessionProvider,
-      (_, next) => _syncRedirectStatus(next),
-      fireImmediately: true,
-    );
+    _authSessionObservationSubscription = ref
+        .listenManual<AsyncValue<AuthSessionObservation>>(
+          authSessionObservationProvider,
+          (_, next) => _handleAuthSessionObservationChanged(next),
+          fireImmediately: true,
+        );
     _errorSubscription = widget.errorHub.stream.listen(_handleErrorEvent);
   }
 
@@ -166,27 +169,71 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   @override
   void dispose() {
     unawaited(_errorSubscription?.cancel());
-    _authSessionSubscription?.close();
+    _authSessionObservationSubscription?.close();
     super.dispose();
   }
 
-  /// auth session 값을 redirect용 상태로 동기화한다.
-  ///
-  /// 이 값이 바뀌면 app 전역 접근 가능 화면도 함께 달라진다.
-  void _syncRedirectStatus(AsyncValue<AuthSession?> sessionValue) {
-    final nextStatus = switch (sessionValue) {
-      AsyncData<AuthSession?>(value: final session) when session != null =>
+  /// 단일 observation 입력으로 redirect와 강제 logout을 연결한다.
+  void _handleAuthSessionObservationChanged(
+    AsyncValue<AuthSessionObservation> observationValue,
+  ) {
+    final nextStatus = _resolveRedirectStatus(observationValue);
+
+    if (widget.authRedirectNotifier.value != nextStatus) {
+      widget.authRedirectNotifier.value = nextStatus;
+    }
+
+    if (observationValue case AsyncData<AuthSessionObservation>(
+      value: final observation,
+    )) {
+      _syncForcedLogout(observation);
+    }
+  }
+
+  AppAuthRedirectStatus _resolveRedirectStatus(
+    AsyncValue<AuthSessionObservation> observationValue,
+  ) {
+    if (observationValue
+        case AsyncData<AuthSessionObservation>(value: final observation)
+        when observation.session != null &&
+            (!observation.hasResolvedUserDocumentState ||
+                !observation.hasResolvedAuthProviderState)) {
+      return AppAuthRedirectStatus.unknown;
+    }
+
+    if (observationValue case AsyncData<AuthSessionObservation>(
+      value: final observation,
+    ) when observation.invalidation != null) {
+      return AppAuthRedirectStatus.invalid;
+    }
+
+    return switch (observationValue) {
+      AsyncData<AuthSessionObservation>(value: final observation)
+          when observation.session != null =>
         AppAuthRedirectStatus.authenticated,
-      AsyncData<AuthSession?>() => AppAuthRedirectStatus.unauthenticated,
-      AsyncError<AuthSession?>() => AppAuthRedirectStatus.unauthenticated,
+      AsyncData<AuthSessionObservation>() =>
+        AppAuthRedirectStatus.unauthenticated,
+      AsyncError<AuthSessionObservation>() =>
+        AppAuthRedirectStatus.unauthenticated,
       _ => AppAuthRedirectStatus.unknown,
     };
+  }
 
-    if (widget.authRedirectNotifier.value == nextStatus) {
+  /// 같은 session uid에 대한 강제 logout 중복 호출을 막는다.
+  void _syncForcedLogout(AuthSessionObservation observation) {
+    final invalidation = observation.invalidation;
+
+    if (observation.session == null || invalidation == null) {
+      _pendingForcedLogoutUid = null;
       return;
     }
 
-    widget.authRedirectNotifier.value = nextStatus;
+    if (_pendingForcedLogoutUid == invalidation.uid) {
+      return;
+    }
+
+    _pendingForcedLogoutUid = invalidation.uid;
+    unawaited(ref.read(authRepositoryProvider).logout());
   }
 
   /// ErrorHub stream을 구독해 전역 에러를 UI 알림으로 전달한다.
@@ -211,12 +258,45 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   /// app root MaterialApp을 렌더링한다.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      scaffoldMessengerKey: _scaffoldMessengerKey,
-      title: appConfig.appTitle,
-      debugShowCheckedModeBanner: appConfig.showDebugBanner,
-      theme: appConfig.theme,
-      routerConfig: widget.router,
+    return ValueListenableBuilder<AppAuthRedirectStatus>(
+      valueListenable: widget.authRedirectNotifier,
+      builder: (context, authStatus, _) {
+        if (authStatus == AppAuthRedirectStatus.unknown) {
+          return MaterialApp(
+            scaffoldMessengerKey: _scaffoldMessengerKey,
+            title: appConfig.appTitle,
+            debugShowCheckedModeBanner: appConfig.showDebugBanner,
+            theme: appConfig.theme,
+            home: const _BootstrapPendingView(),
+          );
+        }
+
+        return MaterialApp.router(
+          scaffoldMessengerKey: _scaffoldMessengerKey,
+          title: appConfig.appTitle,
+          debugShowCheckedModeBanner: appConfig.showDebugBanner,
+          theme: appConfig.theme,
+          routerConfig: widget.router,
+        );
+      },
+    );
+  }
+}
+
+/// auth session과 server state가 맞춰질 때까지 잠깐 보여주는 대기 화면.
+class _BootstrapPendingView extends StatelessWidget {
+  const _BootstrapPendingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2.5),
+        ),
+      ),
     );
   }
 }

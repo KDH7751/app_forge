@@ -189,7 +189,19 @@ UI 규칙:
 - auth_entry feature는 auth 기능을 소비만 한다.
 - auth_entry feature는 login/signup/reset UI와 form controller 흐름을 소유한다.
 - session 관찰은 `auth_session_provider` 경로로만 이뤄진다.
+- `users/{uid}` 문서 상태와 auth provider server-side delete/disable은 auth session 관찰 경로에서 raw fact로만 읽는다.
+- invalid session 해석은 auth provider/session 계열이 수행하고, repository/data는 session invalidation policy를 소유하지 않는다.
 - auth_entry는 auth 계약이나 구현을 재정의하거나 복제하지 않는다.
+
+## Session Integrity 경계
+
+- 서버 계정 부재와 서버 차단/비활성은 일반 unauthenticated가 아니라 invalid session으로 해석한다.
+- 삭제/차단/비활성은 같은 invalid 축에 두되 내부 사유는 구분할 수 있다.
+- invalid 감지 시 보호 라우트는 즉시 이탈시키고 강제 logout은 그 직후 auth 흐름에서 수행한다.
+- 보호 라우트 이탈은 signOut 완료를 기다리지 않는다.
+- bootstrap은 session observation, refreshListenable, logout orchestration만 담당하는 runtime wiring이다.
+- redirect 판단과 진입 경로 결정은 계속 app layer가 가진다.
+- Firestore `users/{uid}` 문서 삭제로 인한 invalid + logout은 세션 무효화 대응이며, 실제 계정 삭제 성공 의미는 아니다.
 
 ## post-login account action 배치
 

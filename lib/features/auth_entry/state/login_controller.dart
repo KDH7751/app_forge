@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/domain/app_error.dart';
 import '../../auth/domain/result.dart';
 import '../../auth/state/auth_repository_provider.dart';
+import '../../auth/state/auth_session_provider.dart';
 
 /// login form controller provider.
 final loginControllerProvider =
@@ -85,17 +86,26 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
       clearPasswordError: true,
     );
 
-    final result = await ref
-        .read(authRepositoryProvider)
-        .login(email: state.email.trim(), password: state.password);
+    final recoveryCount = ref.read(
+      authSessionRecoveryInFlightCountProvider.notifier,
+    );
+    recoveryCount.state += 1;
 
-    if (result case Failure<void>()) {
+    try {
+      final result = await ref
+          .read(authRepositoryProvider)
+          .login(email: state.email.trim(), password: state.password);
+
+      if (result case Failure<void>()) {
+        state = state.copyWith(isLoading: false);
+        return result;
+      }
+
       state = state.copyWith(isLoading: false);
       return result;
+    } finally {
+      recoveryCount.state -= 1;
     }
-
-    state = state.copyWith(isLoading: false);
-    return result;
   }
 
   AppError? _emailErrorFor(AppError error) {

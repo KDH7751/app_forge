@@ -88,3 +88,21 @@
 - 2026-04-09: delete 확인 dialog는 profile UI에 두되, dialog는 입력 확인만 담당하고 실제 delete action 실행은 dialog 바깥 UI가 auth controller를 통해 호출한다.
 - 2026-04-09: changePassword 성공 시 controller state는 `isSuccess`를 유지하되 `currentPassword`, `newPassword`, `confirmNewPassword`와 field error를 함께 초기화한다.
 - 2026-04-09: auth_entry와 profile UI의 루트 알림 보고 분기는 feature-local helper로만 정리하고, 전역 notify 정책으로 승격하지 않는다.
+
+## Phase 3.4 session integrity
+
+- 2026-04-09: Phase 3.4에서는 Session Integrity를 위해 서버 계정 부재와 서버 차단/비활성을 invalid session으로 해석한다.
+- 2026-04-09: 계정 삭제, 차단, 비활성은 같은 invalid 축에 두되 내부 사유는 구분할 수 있게 유지한다. 단, 최종 session shape와 reason data structure는 아직 확정하지 않는다.
+- 2026-04-09: invalid 감지 시 보호 라우트는 즉시 public auth entry로 이탈시키고, 강제 logout은 그 직후 auth 흐름에서 수행한다.
+- 2026-04-09: 보호 라우트 이탈은 signOut 완료를 기다리지 않는다.
+- 2026-04-09: session 관찰은 계속 `auth_session_provider` 단일 경로로 유지한다.
+- 2026-04-09: `users/{uid}` 문서 존재 여부와 서버 상태값(`blocked`, `disabled`)은 raw fact로만 관찰하고, invalid 정책 해석은 provider/session 계열에서 수행한다.
+- 2026-04-09: redirect 판단 책임은 계속 app layer가 가지며, bootstrap은 observation 구독, `refreshListenable` 갱신, forced logout 연결 같은 runtime wiring만 담당한다.
+- 2026-04-09: Firestore 문서 기반 invalidation 외에 auth provider server-side delete/disable도 Phase 3.4 범위에서 감지 대상으로 포함한다.
+- 2026-04-09: auth provider server-side delete/disable 감지는 `currentUser.reload()` probe를 사용한 polling 방식으로 구현하고, 기본 probe interval은 `30초`로 둔다.
+- 2026-04-09: 위 polling은 3.4 범위의 최소 보수 구현이며, 즉시 push형 반영이 아니므로 최대 probe interval만큼 감지 지연이 생길 수 있다.
+- 2026-04-09: login/signup 직후 첫 `users/{uid}` 스냅샷 전에는 보호 라우트를 잘못 허용하지 않도록 pending 구간을 둔다. 이 구간은 blank UI가 아니라 최소 placeholder로 처리한다.
+- 2026-04-09: 위 pending/recovery 처리는 3.4 안정성 보강용이며, 최종 session contract로 승격하지 않는다.
+- 2026-04-09: 기존 auth provider 계정은 살아 있고 `users/{uid}` 문서만 없는 경우, 첫 login/signup 시도 안에서 문서 복구와 정상 진입이 함께 닫히도록 `missingUserDocument` invalidation만 recovery in-flight 동안 일시 보류한다.
+- 2026-04-09: Firestore `users/{uid}` 문서 삭제로 인한 invalid + logout은 세션 무효화 대응이지 실제 계정 삭제 성공 의미가 아니다.
+- 2026-04-09: 실제 계정 삭제 성공 의미는 계속 Phase 3.3의 `auth provider delete + users/{uid} delete` 정의에만 있다. 따라서 Firestore 문서만 수동 삭제된 경우 재가입 불가(`emailAlreadyInUse`)는 정상 결과로 본다.

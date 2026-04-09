@@ -28,7 +28,7 @@ import '../features/profile/ui/profile_page.dart';
 ///
 /// 이 상태 값이 바뀌면
 /// app 전역 화면 접근 흐름도 함께 달라진다.
-enum AppAuthRedirectStatus { unknown, authenticated, unauthenticated }
+enum AppAuthRedirectStatus { unknown, authenticated, unauthenticated, invalid }
 
 /// 이 앱이 실제로 활성화하는 feature 목록.
 ///
@@ -169,6 +169,10 @@ String? resolveAppRedirect({
 
   if (authStatus == AppAuthRedirectStatus.unauthenticated &&
       !isPublicAuthEntryRoute) {
+    return '/login';
+  }
+
+  if (authStatus == AppAuthRedirectStatus.invalid && !isPublicAuthEntryRoute) {
     return '/login';
   }
 
