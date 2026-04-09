@@ -183,12 +183,20 @@ UI 규칙:
 - auth feature는 순수 기능 feature다.
 - auth는 UI page를 소유하지 않는다.
 - auth는 action, validation, feature-level contract를 소유한다.
+- auth는 login/signup/logout/reset뿐 아니라 authenticated post-login action도 같은 feature 안에서 소유한다.
 - auth의 `state`는 provider/controller layer를 의미한다.
 - auth는 session을 repository contract로 노출하지 않는다.
 - auth_entry feature는 auth 기능을 소비만 한다.
 - auth_entry feature는 login/signup/reset UI와 form controller 흐름을 소유한다.
 - session 관찰은 `auth_session_provider` 경로로만 이뤄진다.
 - auth_entry는 auth 계약이나 구현을 재정의하거나 복제하지 않는다.
+
+## post-login account action 배치
+
+- `changePassword`, `deleteAccount`는 auth feature가 action, validation, execution flow를 소유한다.
+- profile feature는 Phase 3.3에서 이 기능들의 임시 소비 UI만 가진다.
+- profile은 post-login account action의 state나 business logic을 소유하지 않는다.
+- delete account 확인 dialog도 profile UI에 두지만, 입력 확인용 UI일 뿐 action 소유권은 auth에 남는다.
 
 ## public Engine surface
 

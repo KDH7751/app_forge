@@ -38,6 +38,7 @@ feature/
 - `domain`:
   - 필요한 경우에만 둔다
   - feature-level `AppError`, `Result`, entity, repository contract 같은 계약을 포함할 수 있다
+  - feature action의 validation helper와 input model도 둘 수 있다
 
 Firebase나 외부 backend 호출은 `features/**/data/**` 아래에서만 허용한다.
 UI는 외부 SDK를 직접 호출하면 안 된다.
@@ -88,6 +89,7 @@ UI는 외부 SDK를 직접 호출하면 안 된다.
 - raw `FirebaseException`, 파싱 에러, 전송 에러를 그대로 throw하지 않는다.
 - 외부 실패는 `AppError`로 매핑한다.
 - feature UI는 feature async 결과에서 `AppError`를 처리한다.
+- validation 본체는 domain/state에 둘 수 있지만, 외부 SDK 호출은 data에서만 수행한다.
 
 ### Global/runtime error
 
@@ -144,6 +146,7 @@ UI는 외부 SDK를 직접 호출하면 안 된다.
 - `ui/` 내부에 controller/provider/mapper를 정의하는 것
 - `state/` 외 위치에 controller/provider/mapper/notice를 두는 것
 - `data/` 외 위치에서 Firebase나 외부 API를 호출하는 것
+- validation/helper를 data layer의 concrete SDK 호출과 섞는 것
 - raw throw 기반 async 흐름을 그대로 외부에 노출하는 것
 - Engine이 app이나 Feature를 import하는 것
 - 임의의 singleton으로 layer 경계를 우회하는 것

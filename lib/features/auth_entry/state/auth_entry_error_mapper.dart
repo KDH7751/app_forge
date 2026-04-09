@@ -10,6 +10,10 @@ String mapAuthEntryError(AppError error) {
     AppErrorType.invalidEmail => '올바른 이메일 형식을 입력해주세요',
     AppErrorType.invalidPassword => '비밀번호는 8자 이상이어야 합니다',
     AppErrorType.passwordMismatch => '비밀번호가 일치하지 않습니다',
+    AppErrorType.currentPasswordRequired => '현재 비밀번호를 입력해주세요',
+    AppErrorType.newPasswordRequired => '새 비밀번호를 입력해주세요',
+    AppErrorType.confirmPasswordRequired => '새 비밀번호 확인을 입력해주세요',
+    AppErrorType.samePassword => '현재 비밀번호와 다른 새 비밀번호를 입력해주세요',
     AppErrorType.network => '네트워크 문제로 요청을 처리할 수 없습니다',
     AppErrorType.unknown => '요청을 처리할 수 없습니다. 다시 시도해주세요',
   };

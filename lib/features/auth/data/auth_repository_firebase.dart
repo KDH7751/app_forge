@@ -4,11 +4,11 @@
 /// Firebase Auth Repository
 ///
 /// 역할:
-/// - FirebaseAuth login/signup/logout/reset과 users 문서 upsert를 단일 성공 흐름으로 묶음.
+/// - FirebaseAuth / Firestore 호출과 AppError 매핑을 auth action 결과로 닫음.
 ///
 /// 경계:
 /// - UI/controller는 Firebase나 Firestore를 직접 알지 않음.
-/// - users upsert 실패 시 rollback signOut은 repository 내부에서 닫음.
+/// - validation 규칙은 domain helper가 소유하고, 이 파일은 concrete 실행만 담당함.
 /// ===================================================================
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,6 +16,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../domain/app_error.dart';
 import '../domain/app_logger.dart';
 import '../domain/auth_repository.dart';
+import '../domain/auth_validation.dart';
+import '../domain/change_password_input.dart';
+import '../domain/delete_account_input.dart';
 import '../domain/result.dart';
 import 'users_document_datasource.dart';
 
@@ -227,17 +230,7 @@ class AuthRepositoryFirebase implements AuthRepository {
     required String email,
     required String password,
   }) {
-    final normalizedEmail = email.trim();
-
-    if (!_isValidEmail(normalizedEmail)) {
-      return const Result<void>.failure(AppError.invalidEmail);
-    }
-
-    if (!_isValidPassword(password)) {
-      return const Result<void>.failure(AppError.invalidPassword);
-    }
-
-    return const Result<void>.success(null);
+    return validateLoginInput(email: email, password: password);
   }
 
   /// signup submit validation.
@@ -247,31 +240,140 @@ class AuthRepositoryFirebase implements AuthRepository {
     required String password,
     required String confirmPassword,
   }) {
-    final emailValidation = validateReset(email: email);
-
-    if (emailValidation is Failure<void>) {
-      return emailValidation;
-    }
-
-    if (!_isValidPassword(password)) {
-      return const Result<void>.failure(AppError.invalidPassword);
-    }
-
-    if (password != confirmPassword) {
-      return const Result<void>.failure(AppError.passwordMismatch);
-    }
-
-    return const Result<void>.success(null);
+    return validateSignupInput(
+      email: email,
+      password: password,
+      confirmPassword: confirmPassword,
+    );
   }
 
   /// reset submit validation.
   @override
   Result<void> validateReset({required String email}) {
-    if (!_isValidEmail(email.trim())) {
-      return const Result<void>.failure(AppError.invalidEmail);
+    return validateResetInput(email: email);
+  }
+
+  /// change password submit validation.
+  @override
+  Result<void> validateChangePassword(ChangePasswordInput input) {
+    return validateChangePasswordInput(input);
+  }
+
+  /// delete account submit validation.
+  @override
+  Result<void> validateDeleteAccount(DeleteAccountInput input) {
+    return validateDeleteAccountInput(input);
+  }
+
+  /// reauthenticate 후 현재 사용자 비밀번호 변경 수행.
+  @override
+  Future<Result<void>> changePassword(ChangePasswordInput input) async {
+    _logger.info('auth.change-password.start');
+
+    final user = _firebaseAuth.currentUser;
+    final email = _resolveUserEmail(user);
+
+    if (user == null || email == null) {
+      _logger.warn('auth.change-password.invalid-user');
+
+      return const Result<void>.failure(AppError.unknown);
     }
 
-    return const Result<void>.success(null);
+    try {
+      await _reauthenticate(
+        user: user,
+        email: email,
+        currentPassword: input.currentPassword,
+      );
+      await user.updatePassword(input.newPassword);
+      _logger.info('auth.change-password.success');
+
+      return const Result<void>.success(null);
+    } on FirebaseAuthException catch (error, stackTrace) {
+      _logger.error(
+        'auth.change-password.failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result<void>.failure(_mapChangePasswordError(error));
+    } catch (error, stackTrace) {
+      _logger.error(
+        'auth.change-password.failed.unknown',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return const Result<void>.failure(AppError.unknown);
+    }
+  }
+
+  /// reauthenticate 후 계정 삭제와 users 문서 삭제를 순서대로 수행.
+  @override
+  Future<Result<void>> deleteAccount(DeleteAccountInput input) async {
+    _logger.info('auth.delete-account.start');
+
+    final user = _firebaseAuth.currentUser;
+    final email = _resolveUserEmail(user);
+
+    if (user == null || email == null) {
+      _logger.warn('auth.delete-account.invalid-user');
+
+      return const Result<void>.failure(AppError.unknown);
+    }
+
+    final uid = user.uid;
+
+    try {
+      await _reauthenticate(
+        user: user,
+        email: email,
+        currentPassword: input.currentPassword,
+      );
+      await user.delete();
+      _logger.info('auth.delete-account.auth-provider.success');
+    } on FirebaseAuthException catch (error, stackTrace) {
+      _logger.error(
+        'auth.delete-account.auth-provider.failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return Result<void>.failure(_mapDeleteAccountAuthError(error));
+    } catch (error, stackTrace) {
+      _logger.error(
+        'auth.delete-account.auth-provider.failed.unknown',
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      return const Result<void>.failure(AppError.unknown);
+    }
+
+    try {
+      await _usersDataSource.deleteUser(uid: uid);
+      _logger.info('auth.delete-account.users-document.success');
+
+      return const Result<void>.success(null);
+    } on FirebaseException catch (error, stackTrace) {
+      _logger.error(
+        'auth.delete-account.users-document.failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      await _cleanupDeletedAccountDocument(uid: uid);
+
+      return Result<void>.failure(_mapFirestoreError(error));
+    } catch (error, stackTrace) {
+      _logger.error(
+        'auth.delete-account.users-document.failed.unknown',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      await _cleanupDeletedAccountDocument(uid: uid);
+
+      return const Result<void>.failure(AppError.unknown);
+    }
   }
 
   /// users upsert 실패 후 rollback signOut.
@@ -290,6 +392,61 @@ class AuthRepositoryFirebase implements AuthRepository {
         'until the next auth refresh or explicit logout attempt',
       );
     }
+  }
+
+  /// currentPassword 기반 recent login 확보.
+  Future<void> _reauthenticate({
+    required User user,
+    required String email,
+    required String currentPassword,
+  }) {
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: currentPassword,
+    );
+
+    return user.reauthenticateWithCredential(credential);
+  }
+
+  /// 계정 삭제 후 남아 있을 수 있는 users 문서를 최대 5회 정리한다.
+  Future<bool> _cleanupDeletedAccountDocument({required String uid}) async {
+    for (var attempt = 1; attempt <= 5; attempt++) {
+      try {
+        await _usersDataSource.deleteUser(uid: uid);
+        _logger.info(
+          'auth.delete-account.users-document.cleanup.success.$attempt',
+        );
+
+        return true;
+      } on FirebaseException catch (error, stackTrace) {
+        _logger.warn(
+          'auth.delete-account.users-document.cleanup.retry.$attempt.'
+          '${error.code}',
+        );
+
+        if (attempt == 5) {
+          _logger.error(
+            'auth.delete-account.users-document.cleanup.failed',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      } catch (error, stackTrace) {
+        _logger.warn(
+          'auth.delete-account.users-document.cleanup.retry.$attempt.unknown',
+        );
+
+        if (attempt == 5) {
+          _logger.error(
+            'auth.delete-account.users-document.cleanup.failed.unknown',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      }
+    }
+
+    return false;
   }
 
   /// Firebase user에서 repository가 허용하는 email만 추출.
@@ -350,6 +507,34 @@ class AuthRepositoryFirebase implements AuthRepository {
     }
   }
 
+  /// FirebaseAuthException -> change password AppError 매핑.
+  AppError _mapChangePasswordError(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'wrong-password':
+      case 'invalid-credential':
+        return AppError.wrongPassword;
+      case 'weak-password':
+        return AppError.weakPassword;
+      case 'network-request-failed':
+        return AppError.network;
+      default:
+        return AppError.unknown;
+    }
+  }
+
+  /// FirebaseAuthException -> delete account AppError 매핑.
+  AppError _mapDeleteAccountAuthError(FirebaseAuthException error) {
+    switch (error.code) {
+      case 'wrong-password':
+      case 'invalid-credential':
+        return AppError.wrongPassword;
+      case 'network-request-failed':
+        return AppError.network;
+      default:
+        return AppError.unknown;
+    }
+  }
+
   /// Firestore 오류 -> AppError 매핑.
   AppError _mapFirestoreError(FirebaseException error) {
     switch (error.code) {
@@ -359,17 +544,5 @@ class AuthRepositoryFirebase implements AuthRepository {
       default:
         return AppError.unknown;
     }
-  }
-
-  /// 간단한 이메일 형식 검증.
-  bool _isValidEmail(String email) {
-    return RegExp(
-      r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
-    ).hasMatch(email);
-  }
-
-  /// 최소 비밀번호 규칙.
-  bool _isValidPassword(String password) {
-    return password.length >= 8;
   }
 }

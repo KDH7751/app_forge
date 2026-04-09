@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:app_forge/engine/engine.dart';
 
 import '../../auth/domain/result.dart';
-import '../../auth/state/auth_error_mapper.dart';
+import '../state/auth_entry_error_report_helper.dart';
 import '../state/auth_entry_error_mapper.dart';
 import '../state/signup_controller.dart';
 
@@ -76,7 +76,7 @@ class SignupPage extends ConsumerWidget {
 
                           if (result case Failure<void>(
                             error: final error,
-                          ) when shouldReportAuthErrorNotification(error)) {
+                          ) when shouldReportAuthEntryError(error)) {
                             reportUiError(context, error, domainError: error);
                           }
                         }

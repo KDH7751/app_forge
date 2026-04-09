@@ -10,6 +10,9 @@ import 'package:app_forge/app/app_config.dart';
 import 'package:app_forge/features/auth/domain/app_error.dart';
 import 'package:app_forge/features/auth/domain/auth_repository.dart';
 import 'package:app_forge/features/auth/domain/auth_session.dart';
+import 'package:app_forge/features/auth/domain/auth_validation.dart';
+import 'package:app_forge/features/auth/domain/change_password_input.dart';
+import 'package:app_forge/features/auth/domain/delete_account_input.dart';
 import 'package:app_forge/features/auth/domain/result.dart';
 import 'package:app_forge/features/auth/state/auth_repository_provider.dart';
 import 'package:app_forge/features/auth/state/auth_session_provider.dart';
@@ -96,8 +99,41 @@ void main() {
       find.text('Profile route inside the Engine shell with drawer enabled.'),
       findsOneWidget,
     );
+    expect(find.text('Change Password'), findsOneWidget);
+    expect(find.text('Delete Account'), findsOneWidget);
     expect(find.byTooltip('Open navigation menu'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
+  });
+
+  testWidgets('profile delete account flow requires confirmation dialog', (
+    tester,
+  ) async {
+    final sessionSource = _FakeAuthSessionSource(
+      initialSession: const AuthSession(
+        uid: 'uid-1',
+        email: 'user@example.com',
+      ),
+    );
+    final repository = _FakeAuthRepository(sessionSource: sessionSource);
+    addTearDown(sessionSource.dispose);
+
+    await tester.pumpWidget(_buildBootstrap(repository, sessionSource));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.person_outline));
+    await tester.pumpAndSettle();
+    final deleteButton = find.widgetWithText(FilledButton, 'Delete account');
+    await tester.ensureVisible(deleteButton);
+    await tester.tap(deleteButton);
+    await tester.pumpAndSettle();
+
+    final dialog = find.byType(AlertDialog);
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(of: dialog, matching: find.text('Current password')),
+      findsOneWidget,
+    );
+    expect(find.widgetWithText(FilledButton, 'Delete'), findsOneWidget);
   });
 
   testWidgets('login page submits and redirect moves to home route', (
@@ -345,19 +381,23 @@ class _FakeAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<Result<void>> changePassword(ChangePasswordInput input) async {
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<void>> deleteAccount(DeleteAccountInput input) async {
+    _sessionSource.setSession(null);
+
+    return const Result<void>.success(null);
+  }
+
+  @override
   Result<void> validateLogin({
     required String email,
     required String password,
   }) {
-    if (!_isValidEmail(email)) {
-      return const Result<void>.failure(AppError.invalidEmail);
-    }
-
-    if (!_isValidPassword(password)) {
-      return const Result<void>.failure(AppError.invalidPassword);
-    }
-
-    return const Result<void>.success(null);
+    return validateLoginInput(email: email, password: password);
   }
 
   @override
@@ -366,36 +406,26 @@ class _FakeAuthRepository implements AuthRepository {
     required String password,
     required String confirmPassword,
   }) {
-    if (!_isValidEmail(email)) {
-      return const Result<void>.failure(AppError.invalidEmail);
-    }
-
-    if (!_isValidPassword(password)) {
-      return const Result<void>.failure(AppError.invalidPassword);
-    }
-
-    if (password != confirmPassword) {
-      return const Result<void>.failure(AppError.passwordMismatch);
-    }
-
-    return const Result<void>.success(null);
+    return validateSignupInput(
+      email: email,
+      password: password,
+      confirmPassword: confirmPassword,
+    );
   }
 
   @override
   Result<void> validateReset({required String email}) {
-    if (!_isValidEmail(email)) {
-      return const Result<void>.failure(AppError.invalidEmail);
-    }
-
-    return const Result<void>.success(null);
+    return validateResetInput(email: email);
   }
 
-  bool _isValidEmail(String email) {
-    return email.contains('@');
+  @override
+  Result<void> validateChangePassword(ChangePasswordInput input) {
+    return validateChangePasswordInput(input);
   }
 
-  bool _isValidPassword(String password) {
-    return password.length >= 8;
+  @override
+  Result<void> validateDeleteAccount(DeleteAccountInput input) {
+    return validateDeleteAccountInput(input);
   }
 }
 

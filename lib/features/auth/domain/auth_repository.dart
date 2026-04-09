@@ -1,3 +1,5 @@
+import 'change_password_input.dart';
+import 'delete_account_input.dart';
 import 'result.dart';
 
 /// auth 기능 계약.
@@ -17,6 +19,12 @@ abstract interface class AuthRepository {
   /// 비밀번호 재설정 이메일 발송.
   Future<Result<void>> sendPasswordResetEmail({required String email});
 
+  /// 인증된 사용자 비밀번호 변경 수행.
+  Future<Result<void>> changePassword(ChangePasswordInput input);
+
+  /// 인증된 사용자 계정 삭제 수행.
+  Future<Result<void>> deleteAccount(DeleteAccountInput input);
+
   /// login submit validation.
   Result<void> validateLogin({required String email, required String password});
 
@@ -29,4 +37,10 @@ abstract interface class AuthRepository {
 
   /// reset submit validation.
   Result<void> validateReset({required String email});
+
+  /// change password submit validation.
+  Result<void> validateChangePassword(ChangePasswordInput input);
+
+  /// delete account submit validation.
+  Result<void> validateDeleteAccount(DeleteAccountInput input);
 }

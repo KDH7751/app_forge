@@ -41,4 +41,9 @@ class UsersDocumentDataSource {
       'updatedAt': serverTimestamp,
     });
   }
+
+  /// users/{uid} 문서 삭제.
+  Future<void> deleteUser({required String uid}) {
+    return _firestore.collection('users').doc(uid).delete();
+  }
 }

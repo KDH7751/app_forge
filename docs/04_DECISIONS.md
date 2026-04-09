@@ -73,3 +73,18 @@
 - 2026-04-03: ErrorEnvelope, ErrorEvent, ErrorDecision, ErrorSource는 단일 file로 통합한다.
 - 2026-04-03: model 통합은 DX 개선 목적이며 책임 분리는 유지한다.
 - 2026-04-03: `AppError`는 feature failure contract로 유지하고, global error model로 승격하지 않는다.
+
+## Phase 3.3 post-login account actions
+
+- 2026-04-09: Phase 3.3에서는 authenticated post-login account action으로 `changePassword`, `deleteAccount`를 auth feature에 추가한다.
+- 2026-04-09: auth feature는 계속 UI page를 소유하지 않으며, profile feature는 이 두 action의 임시 소비 UI만 가진다.
+- 2026-04-09: `changePassword` 입력은 `currentPassword`, `newPassword`, `confirmNewPassword`를 가진 input model로 고정한다.
+- 2026-04-09: `deleteAccount` 입력은 reauthenticate를 위한 `currentPassword` input model로 고정한다.
+- 2026-04-09: changePassword/deleteAccount validation 본체는 auth domain helper가 소유하고, data layer는 concrete SDK 호출만 수행한다.
+- 2026-04-09: `deleteAccount` 성공 정의는 auth provider 계정 삭제 성공 + `users/{uid}` 삭제 성공이다.
+- 2026-04-09: `deleteAccount` 실행 순서는 reauthenticate -> auth provider account delete -> `users/{uid}` delete 로 고정한다.
+- 2026-04-09: auth provider 계정 삭제 성공 후 `users/{uid}` 삭제가 실패하면 repository 내부에서 같은 문서 삭제 cleanup을 즉시 최대 5회 재시도한다.
+- 2026-04-09: delete cleanup 성공 여부와 무관하게 partial delete는 success로 승격하지 않고 failure로 닫는다.
+- 2026-04-09: delete 확인 dialog는 profile UI에 두되, dialog는 입력 확인만 담당하고 실제 delete action 실행은 dialog 바깥 UI가 auth controller를 통해 호출한다.
+- 2026-04-09: changePassword 성공 시 controller state는 `isSuccess`를 유지하되 `currentPassword`, `newPassword`, `confirmNewPassword`와 field error를 함께 초기화한다.
+- 2026-04-09: auth_entry와 profile UI의 루트 알림 보고 분기는 feature-local helper로만 정리하고, 전역 notify 정책으로 승격하지 않는다.

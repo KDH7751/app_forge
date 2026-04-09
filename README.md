@@ -14,7 +14,7 @@ Feature를 추가하는 방식으로 확장되어야 한다.
 
 ## 현재 상태
 
-현재 Phase 3.2까지 완료되었다.
+현재 Phase 3.3까지 완료되었다.
 
 구현된 범위:
 
@@ -24,11 +24,12 @@ Feature를 추가하는 방식으로 확장되어야 한다.
 - NavigationState
 - EngineShell / FeatureShell
 - Firebase bootstrap 진입 (`initializeApp`)
-- auth 기능 (login / signup / logout / reset)
+- auth 기능 (login / signup / logout / reset / changePassword / deleteAccount)
 - auth / auth_entry 구조 분리
 - AuthSession provider
 - app layer auth redirect
 - users/{uid} upsert 정책
+- profile 기반 임시 post-login account action UI
 - Result<T> / AppError 기반 feature failure 처리
 - ErrorHub 기반 전역 에러 처리 구조
 - ErrorPolicy / ErrorDecision
@@ -163,6 +164,7 @@ app 설정은 반드시 아래 3개 파일로 수렴한다.
 
 - Phase 3.1: auth 구조 분리 + UX 확장 완료
 - Phase 3.2: 전역 에러 처리 시스템 도입 완료
+- Phase 3.3: post-login account action(changePassword / deleteAccount) 완료
 
 이 상태부터는
 

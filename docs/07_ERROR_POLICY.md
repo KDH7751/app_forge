@@ -78,6 +78,8 @@ Feature 내부 비동기 실패와 validation 실패는
 - 전역 에러 UI는 `ErrorDecision.shouldNotify`만 기준으로 반응한다.
 - 전역 에러 listener는 app root에서 단 한 번만 등록한다.
 - feature 내부에서 전역 error stream을 직접 listen하지 않는다.
+- feature UI는 필요할 때 local helper 수준에서만 루트 알림 보고 여부를 최소 분기할 수 있다.
+- 이 local helper는 feature 내부 편의 로직일 뿐 전역 `ErrorPolicy`가 아니다.
 
 ## 3. Feature failure와 global/runtime error의 관계
 
@@ -87,9 +89,9 @@ Feature 내부 비동기 실패와 validation 실패는
 - 전역 정책은 `domainError`의 타입을 해석하지 않는다.
 - `AppError`를 global error model로 승격하지 않는다.
 
-## Phase 3.1 auth feature의 최소 AppErrorType
+## Phase 3.3 auth feature의 최소 AppErrorType
 
-현재 Phase 3.1에서는 auth slice 안에서 아래 타입을 최소 범위로 구현한다.
+현재 Phase 3.3에서는 auth slice 안에서 아래 타입을 최소 범위로 구현한다.
 
 - `userNotFound`
 - `wrongPassword`
@@ -98,25 +100,32 @@ Feature 내부 비동기 실패와 validation 실패는
 - `invalidEmail`
 - `invalidPassword`
 - `passwordMismatch`
+- `currentPasswordRequired`
+- `newPasswordRequired`
+- `confirmPasswordRequired`
+- `samePassword`
 - `network`
 - `unknown`
 
 ## 현재 상태
 
-현재 Phase 3.1에서는 이 규칙이 auth slice에 최소 범위로 적용되어 있다.
+현재 Phase 3.3에서는 이 규칙이 auth slice에 최소 범위로 적용되어 있다.
 
 즉,
 
-- `Result<T>` / `AppError` 방향은 실제 auth login/signup/logout/reset 흐름에 적용되어 있고
+- `Result<T>` / `AppError` 방향은 실제 auth login/signup/logout/reset/changePassword/deleteAccount 흐름에 적용되어 있고
 - Firebase Auth / Firestore 예외는 repository에서 `AppError`로 변환된다.
 - submit validation도 `Result<void>` / `AppError` 계약을 사용한다.
+- changePassword 성공 시 controller는 `isSuccess`를 유지하면서 입력값과 field error를 초기화한다.
+- delete account의 partial delete는 cleanup 성공 여부와 무관하게 failure로 유지된다.
+- delete account cleanup 실패 추적은 repository logger가 담당하지만, 결과 계약은 계속 feature failure로 닫힌다.
 
 다만 shared core 승격은 아직 하지 않는다.
 
 Phase 3.2부터는 여기에 더해
 앱 전역/runtime 에러를 위한 `ErrorHub` 기반 처리 흐름이 별도로 도입되었다.
 
-## Phase 3.1 UI 메시지 규칙
+## Phase 3.3 UI 메시지 규칙
 
 - auth는 UI 메시지를 반환하지 않는다.
 - UI는 `AppErrorType`을 자체 메시지로 매핑한다.

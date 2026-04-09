@@ -7,6 +7,10 @@ enum AppErrorType {
   invalidEmail,
   invalidPassword,
   passwordMismatch,
+  currentPasswordRequired,
+  newPasswordRequired,
+  confirmPasswordRequired,
+  samePassword,
   network,
   unknown,
 }
@@ -58,6 +62,30 @@ class AppError {
   static const AppError passwordMismatch = AppError(
     type: AppErrorType.passwordMismatch,
     code: 'password-mismatch',
+  );
+
+  /// 현재 비밀번호 미입력.
+  static const AppError currentPasswordRequired = AppError(
+    type: AppErrorType.currentPasswordRequired,
+    code: 'current-password-required',
+  );
+
+  /// 새 비밀번호 미입력.
+  static const AppError newPasswordRequired = AppError(
+    type: AppErrorType.newPasswordRequired,
+    code: 'new-password-required',
+  );
+
+  /// 새 비밀번호 확인 미입력.
+  static const AppError confirmPasswordRequired = AppError(
+    type: AppErrorType.confirmPasswordRequired,
+    code: 'confirm-password-required',
+  );
+
+  /// 현재 비밀번호와 동일한 새 비밀번호.
+  static const AppError samePassword = AppError(
+    type: AppErrorType.samePassword,
+    code: 'same-password',
   );
 
   /// 네트워크 문제.
