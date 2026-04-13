@@ -17,6 +17,7 @@ import 'package:app_forge/features/auth/domain/validation/auth_validation.dart';
 import 'package:app_forge/features/auth/data/datasources/users_document_datasource.dart';
 import 'package:app_forge/features/auth/state/providers/auth_facade_provider.dart';
 import 'package:app_forge/features/auth/state/providers/auth_runtime_provider.dart';
+import 'package:app_forge/features/auth/state/providers/auth_session_models.dart';
 import 'package:app_forge/features/auth/state/providers/auth_session_provider.dart';
 
 /// router shell / auth_entry 흐름 검증용 widget test 묶음.
@@ -519,7 +520,7 @@ void main() {
     () async {
       final container = ProviderContainer(
         overrides: <Override>[
-          authSessionObservationStreamProvider.overrideWithValue(
+          authObservationStreamProvider.overrideWithValue(
             Stream<AuthSessionObservation>.error(
               StateError('observation error'),
             ),
@@ -984,7 +985,7 @@ ProviderContainer _buildAuthContainer({
       usersDocumentDataSourceProvider.overrideWithValue(
         _FakeUsersDocumentDataSource(userStateSource),
       ),
-      authProviderInvalidationWatcherProvider.overrideWithValue(
+      authInvalidationWatcherProvider.overrideWithValue(
         (uid) =>
             authProviderInvalidationSource?.stream ??
             Stream<AuthSessionInvalidation?>.value(null),
@@ -1010,7 +1011,7 @@ Bootstrap _buildBootstrapWithUserState(
       usersDocumentDataSourceProvider.overrideWithValue(
         _FakeUsersDocumentDataSource(userStateSource),
       ),
-      authProviderInvalidationWatcherProvider.overrideWithValue(
+      authInvalidationWatcherProvider.overrideWithValue(
         (uid) =>
             authProviderInvalidationSource?.stream ??
             Stream<AuthSessionInvalidation?>.value(null),

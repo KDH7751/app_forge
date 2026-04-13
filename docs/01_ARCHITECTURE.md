@@ -67,15 +67,15 @@ lib/
 - `lib/features/**/ui`: page, widget, layout 같은 화면 렌더링 코드를 가진다.
 - `lib/features/**/state`: controller, provider, mapper, notice 같은 UI 상태와 흐름 코드를 가진다.
 - `lib/features/**/domain`: 필요한 경우 Feature 계약, entity, feature-level error/result를 가진다.
-- `lib/features/**/data`: 필요한 경우 repository 구현, datasource, 외부 SDK 연동을 가진다.
+- `lib/features/**/data`: 필요한 경우 action concrete 구현, datasource, factory, 외부 SDK 연동을 가진다.
 
 ## app 설정 파일
 
 app 전용 설정은 반드시 아래 3개 파일로 수렴해야 한다.
 
 - `app_config.dart`: app의 look and feel, 초기 진입 location, 최소 shell config와 app-level policy를 정의한다.
-- `app_plugins.dart`: Plugin 조립과 runtime integration을 정의한다.
-- `app_features.dart`: app에 등록할 Feature 목록과 route 조립 지점을 정의한다.
+- `app_plugins.dart`: 영역별 provider set, 최소 config, runtime/plugin 파생값을 정의한다.
+- `app_features.dart`: feature/policy 입력과 route/redirect/error wiring 파생값을 정의한다.
 
 이 외의 파일이 두 번째 composition root가 되면 안 된다.
 
@@ -109,6 +109,23 @@ app 설정 파일 수를 늘리는 예외가 아니다.
 
 이 구조는 Engine의 재사용성을 유지하고, 제품 도메인 policy가 Engine 안으로 새는 것을 막는다.
 
+## app composition 입력 모델
+
+- `/app`의 1차 provider 선택 축은 `auth`, `domain data`, `file/storage`, `analytics/crash`다.
+- `push/notification`은 현재 phase 범위에 포함하지 않는다.
+- `auth`와 `domain data`는 둘 다 Firebase를 써도 같은 축으로 합치지 않는다.
+- app은 각 축에 대해 `provider set`, 그 set이 동작하기 위한 `최소 config`, app 수준 `정책 입력`까지만 가진다.
+- 개별 action endpoint, concrete action 구현 클래스, runtime wiring 세부는 app이 직접 소유하지 않는다.
+- `domain data`, `file/storage`, `analytics/crash`는 현재 composition 축으로 정의하는 범위까지만 잠그며, auth 외 축의 concrete provider set 예시는 실제 구현이 필요한 축에서만 확장한다.
+- `push/notification`은 현재 composition 입력 모델에 포함하지 않는 것을 범위 경계로 유지한다.
+
+현재 app 3파일의 읽기 기준은 아래와 같다.
+
+- `app_plugins.dart` 상단: 사용자가 직접 수정하는 provider set / 최소 config 입력
+- `app_plugins.dart` 하단: 입력으로부터 계산되는 plugin/runtime 파생값
+- `app_features.dart` 상단: 사용자가 직접 수정하는 feature/policy 입력
+- `app_features.dart` 하단: 입력으로부터 계산되는 route/redirect/error wiring 파생값
+
 ## Feature 내부 구조
 
 Feature는 UI 중심 구조를 따른다.
@@ -134,7 +151,7 @@ Feature 내부 비동기 실패와 validation 실패는
 이 축은 다음 범위를 가진다.
 
 - validation
-- repository
+- action / data execution
 - controller
 - feature UI
 
@@ -182,10 +199,14 @@ UI 규칙:
 
 - auth feature는 순수 기능 feature다.
 - auth는 UI page를 소유하지 않는다.
-- auth는 action, validation, feature-level contract를 소유한다.
+- auth는 `AuthFacade`, `...Action`, validation, feature-level contract를 소유한다.
 - auth는 login/signup/logout/reset뿐 아니라 authenticated post-login action도 같은 feature 안에서 소유한다.
-- auth의 `state`는 provider/controller layer를 의미한다.
-- auth는 session을 repository contract로 노출하지 않는다.
+- auth는 provider set 단위로 concrete action/session을 조립한다.
+- auth는 기능별 자유 혼합을 기본 모델로 허용하지 않는다.
+- auth capability는 선택된 provider set의 속성이며, app은 지원되는 capability를 일부 비활성화만 할 수 있다.
+- auth 최소 config는 provider set 전체 설정 수준까지만 app이 가진다.
+- auth의 `state`는 setup/runtime/action/facade/session provider와 controller layer를 의미한다.
+- auth는 session을 facade/action contract로 노출하지 않는다.
 - auth_entry feature는 auth 기능을 소비만 한다.
 - auth_entry feature는 login/signup/reset UI와 form controller 흐름을 소유한다.
 - session 관찰은 `auth_session_provider` 경로로만 이뤄진다.
@@ -196,8 +217,14 @@ UI 규칙:
 - `Invalid`는 public `InvalidReason`만 가진다.
 - `Unauthenticated`와 `Pending`은 추가 payload를 가지지 않는다.
 - `users/{uid}` 문서 상태와 auth provider server-side delete/disable은 auth session 관찰 경로에서 raw fact로만 읽는다.
-- invalid session 해석은 auth provider/session 계열이 수행하고, repository/data는 session invalidation policy를 소유하지 않는다.
+- invalid session 해석은 auth provider/session 계열이 수행하고, data/action layer는 session invalidation policy를 소유하지 않는다.
 - auth_entry는 auth 계약이나 구현을 재정의하거나 복제하지 않는다.
+
+현재 auth 내부 기본 구조는 아래처럼 이해한다.
+
+- `domain`: `AuthFacade`, `...Action`, auth 입력 모델, validation helper, `AuthSession`, auth 내부 공통 core
+- `data`: provider set이 사용하는 concrete action, datasource, runtime factory
+- `state`: setup/runtime/action/facade provider, session provider, controller
 
 ## Session Integrity 경계
 
@@ -205,6 +232,7 @@ UI 규칙:
 - 삭제/차단/비활성은 같은 invalid 축에 두되 내부 사유는 구분할 수 있다.
 - invalid 감지 시 보호 라우트는 즉시 이탈시키고 강제 logout은 그 직후 auth 흐름에서 수행한다.
 - 보호 라우트 이탈은 signOut 완료를 기다리지 않는다.
+- session 축은 facade/action assembly의 부속물이 아니라 별도 고정 기반 축으로 유지한다.
 - 첫 `users/{uid}` 판정 전, auth provider probe 판정 전, recovery in-flight 동안의 합법적 과도 상태는 public contract에서 `Pending`으로 수렴한다.
 - `unknown`은 public contract에서 제거되고 `Pending`에 흡수된다.
 - `recovery`는 최상위 public 상태가 아니라 internal 처리 상태로 유지한다.

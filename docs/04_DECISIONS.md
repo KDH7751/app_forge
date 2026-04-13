@@ -31,8 +31,8 @@
 - 2026-03-27: auth redirect는 app layer 함수로 정의하고 RouterEngine에는 `redirect`와 `refreshListenable`만 주입한다.
 - 2026-03-27: auth session은 `FirebaseUser`가 아니라 `AuthSession` provider로만 외부에 노출한다.
 - 2026-03-27: login 성공 정의는 `FirebaseAuth 성공 + users/{uid} upsert 성공`이다.
-- 2026-03-27: `users/{uid}` upsert는 repository 내부에서만 호출하고 `DocumentReference.get() -> set/update` 방식으로 고정한다.
-- 2026-03-27: users upsert 실패 시 repository 내부에서 rollback signOut을 시도하고 실패 여부와 무관하게 login은 실패로 닫는다.
+- 2026-03-27: `users/{uid}` upsert는 auth login/signup 실행 흐름 내부에서만 호출하고 `DocumentReference.get() -> set/update` 방식으로 고정한다.
+- 2026-03-27: users upsert 실패 시 auth 실행 흐름 내부에서 rollback signOut을 시도하고 실패 여부와 무관하게 login은 실패로 닫는다.
 - 2026-03-27: `AppError`, `Result<T>`, logger는 auth slice 내부의 임시 generic core로 구현하고 shared core로 간주하지 않는다.
 - 2026-03-27: runtime bootstrap host는 `lib/bootstrap/bootstrap.dart`로 두고, app 설정은 계속 `app_config.dart`, `app_plugins.dart`, `app_features.dart` 3파일만 source of truth로 유지한다.
 - 2026-03-27: engine 내부의 bootstrap 개념은 `plugins`로 rename하고 public engine surface는 이를 export한다.
@@ -44,7 +44,7 @@
 
 - 2026-03-31: Phase 3.1에서는 auth 기능을 login/signup/logout/reset + validation 규칙까지 확장한다.
 - 2026-03-31: auth feature는 action/validation/session model을 소유하고, auth_entry feature는 login/signup/reset UI와 form controller를 소유한다.
-- 2026-03-31: `AuthRepository`는 session stream을 노출하지 않고 action/validation contract만 가진다.
+- 2026-03-31: auth 실행/validation 공통 표면은 session stream을 노출하지 않고, session 관찰은 별도 provider 축으로 유지한다.
 - 2026-03-31: auth session 관찰은 `auth_session_provider`가 FirebaseAuth 기반 별도 provider로 소유한다.
 - 2026-03-31: `/login`, `/signup`, `/reset-password`는 모두 `useShell: false` standalone public route로 고정한다.
 - 2026-03-31: signup 성공 정의는 `createUser + users/{uid} upsert 성공`이며, upsert 실패 시 rollback signOut을 시도하고 signup을 실패로 닫는다.
@@ -83,7 +83,7 @@
 - 2026-04-09: changePassword/deleteAccount validation 본체는 auth domain helper가 소유하고, data layer는 concrete SDK 호출만 수행한다.
 - 2026-04-09: `deleteAccount` 성공 정의는 auth provider 계정 삭제 성공 + `users/{uid}` 삭제 성공이다.
 - 2026-04-09: `deleteAccount` 실행 순서는 reauthenticate -> auth provider account delete -> `users/{uid}` delete 로 고정한다.
-- 2026-04-09: auth provider 계정 삭제 성공 후 `users/{uid}` 삭제가 실패하면 repository 내부에서 같은 문서 삭제 cleanup을 즉시 최대 5회 재시도한다.
+- 2026-04-09: auth provider 계정 삭제 성공 후 `users/{uid}` 삭제가 실패하면 auth delete 실행 흐름 내부에서 같은 문서 삭제 cleanup을 즉시 최대 5회 재시도한다.
 - 2026-04-09: delete cleanup 성공 여부와 무관하게 partial delete는 success로 승격하지 않고 failure로 닫는다.
 - 2026-04-09: delete 확인 dialog는 profile UI에 두되, dialog는 입력 확인만 담당하고 실제 delete action 실행은 dialog 바깥 UI가 auth controller를 통해 호출한다.
 - 2026-04-09: changePassword 성공 시 controller state는 `isSuccess`를 유지하되 `currentPassword`, `newPassword`, `confirmNewPassword`와 field error를 함께 초기화한다.
@@ -127,3 +127,22 @@
 - 2026-04-09: `Invalid`는 public `reason`만 가지며 `uid`, `email`은 노출하지 않는다.
 - 2026-04-09: profile/domain 성격의 데이터는 `AuthSession` public contract에 넣지 않는다.
 - 2026-04-09: `userReady`, `providerReady`, `recovering`, `pendingReason`, recovery counter, polling wiring, 세부 raw invalidation reason은 internal only로 유지한다.
+
+## Phase 3.6 provider-set composition
+
+- 2026-04-13: Phase 3.6의 중심은 `/app`이 영역별 provider set을 선택하고, 각 영역 내부가 그 set을 concrete 구현으로 조립하는 구조다.
+- 2026-04-13: `/app`의 1차 provider 선택 축은 `auth`, `domain data`, `file/storage`, `analytics/crash`다.
+- 2026-04-13: `push/notification`은 이번 phase 범위에 포함하지 않고 보류한다.
+- 2026-04-13: `auth`와 `domain data`는 둘 다 Firebase를 써도 항상 별개 provider 축으로 유지한다.
+- 2026-04-13: app은 각 provider 축에 대해 `provider set`, 그 set이 동작하기 위한 `최소 config`, app 수준 `정책 입력`까지만 가진다.
+- 2026-04-13: app은 개별 auth action endpoint, concrete action 구현 클래스, provider wiring 세부, runtime wiring 세부를 직접 소유하지 않는다.
+- 2026-04-13: `domain data`, `file/storage`, `analytics/crash`는 현재 phase에서 composition 축으로 정의하는 범위까지만 잠그고, auth 외 축의 concrete provider set 예시는 실제 구현이 필요한 축에서만 확장한다.
+- 2026-04-13: `push/notification`은 이번 phase의 composition 축 목록에 포함하지 않는 것을 범위 경계로 유지한다.
+- 2026-04-13: auth는 기능별 자유 혼합을 기본 모델로 허용하지 않고 provider set 단위로 움직인다.
+- 2026-04-13: auth capability는 기본적으로 선택된 auth provider set의 속성이다. app은 지원되지 않는 capability를 새로 만들 수 없고, 지원되는 capability를 일부 비활성화만 할 수 있다.
+- 2026-04-13: auth 최소 config는 provider set 전체 설정 수준까지만 app이 가진다. action별 endpoint 같은 세부 설정은 provider set 내부 구현이 소유한다.
+- 2026-04-13: auth 공통 실행 표면은 `AuthFacade`로 두고, 기능별 실행 계약 명명은 `...Action`으로 통일한다.
+- 2026-04-13: auth 내부는 `provider set assembly -> action provider -> facade provider` 조립 경로를 사용한다.
+- 2026-04-13: session은 facade/action assembly와 분리된 고정 기반 축으로 유지하고, public `AuthSession` contract와 redirect 소비 구조는 계속 유지한다.
+- 2026-04-13: `app_plugins.dart`는 상단에 사용자가 직접 수정하는 provider set / 최소 config 입력을 두고, 하단에 그 입력으로부터 계산되는 runtime/plugin 파생값을 둔다.
+- 2026-04-13: `app_features.dart`는 상단에 사용자가 직접 수정하는 feature/policy 입력을 두고, 하단에 그 입력으로부터 계산되는 route/redirect/error wiring 파생값을 둔다.

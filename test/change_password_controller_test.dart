@@ -7,7 +7,7 @@ import 'package:app_forge/features/auth/domain/core/result.dart';
 import 'package:app_forge/features/auth/domain/models/change_password_input.dart';
 import 'package:app_forge/features/auth/domain/models/delete_account_input.dart';
 import 'package:app_forge/features/auth/state/providers/auth_facade_provider.dart';
-import 'package:app_forge/features/auth/state/change_password_controller.dart';
+import 'package:app_forge/features/auth/state/controllers/change_password_controller.dart';
 
 void main() {
   test(

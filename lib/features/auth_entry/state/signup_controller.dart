@@ -113,9 +113,7 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
       clearConfirmPasswordError: true,
     );
 
-    final recoveryCount = ref.read(
-      authSessionRecoveryInFlightCountProvider.notifier,
-    );
+    final recoveryCount = ref.read(authRecoveryCountProvider.notifier);
     recoveryCount.state += 1;
 
     try {

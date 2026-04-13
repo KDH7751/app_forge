@@ -4,120 +4,89 @@
 /// Auth Session Provider
 ///
 /// 역할:
-/// - auth state layer의 provider로 FirebaseAuth session stream을 AuthSession contract로 노출함.
+/// - 선택된 auth provider set의 raw session 관찰을 public `AuthSession`으로 수렴한다.
 ///
 /// 경계:
-/// - auth는 UI page를 소유하지 않음.
-/// - FirebaseUser를 직접 노출하지 않음.
-/// - redirect 판단은 app layer가 소유함.
-/// - facade/action assembly와 독립된 session 기반 축이다.
+/// - redirect 판단은 app layer가 소유하고, 이 파일은 session contract만 결정한다.
+/// - facade/action assembly와 입력 기준은 공유할 수 있어도 실행 흐름에는 의존하지 않는다.
+/// - invalidation 해석은 여기서 닫고, data layer는 raw fact만 제공한다.
 /// ===================================================================
 
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasources/users_document_datasource.dart';
-import '../../data/factories/auth_runtime_factory.dart';
 import '../../domain/session/auth_session.dart';
+import 'auth_assembly_provider.dart';
 import 'auth_runtime_provider.dart';
+import 'auth_session_models.dart';
 
-/// 서버 계정 invalid 사유.
-enum AuthSessionInvalidationReason {
-  missingUserDocument,
-  blockedUser,
-  disabledUser,
-  missingAuthProviderUser,
-  disabledAuthProviderUser,
-}
-
-/// auth session 관찰 중 감지한 invalid 신호.
-class AuthSessionInvalidation {
-  const AuthSessionInvalidation({required this.uid, required this.reason});
-
-  final String uid;
-  final AuthSessionInvalidationReason reason;
-}
-
-/// auth session 관찰 경로의 현재 raw observation.
-class AuthSessionObservation {
-  const AuthSessionObservation({
-    required this.authenticated,
-    required this.invalidation,
-    required this.userReady,
-    required this.providerReady,
-  });
-
-  final Authenticated? authenticated;
-  final AuthSessionInvalidation? invalidation;
-  final bool userReady;
-  final bool providerReady;
-}
-
-typedef AuthProviderInvalidationWatcher =
-    Stream<AuthSessionInvalidation?> Function(String uid);
-
-/// login/signup 중 users 문서 복구를 기다리는 auth action 수.
-final authSessionRecoveryInFlightCountProvider = StateProvider<int>((ref) {
+/// login/signup 중 users 문서 복구를 기다리는 in-flight action 수.
+///
+/// auth_entry controller가 증가/감소시키며,
+/// missing user document를 곧바로 invalid로 보지 않고 잠시 `Pending`으로 hold할 때 사용한다.
+final authRecoveryCountProvider = StateProvider<int>((ref) {
   return 0;
 });
 
-/// auth session stream source provider.
+/// 선택된 provider set이 제공하는 raw authenticated session stream.
+///
+/// session contract는 provider set에 따라 달라질 수 있지만,
+/// 외부 소비자는 항상 이 provider를 통해 같은 public contract로 수렴한다.
 final authSessionStreamProvider = Provider<Stream<Authenticated?>>((ref) {
-  final firebaseAuth = ref.watch(firebaseAuthProvider);
-
-  return watchAuthSessions(firebaseAuth).asBroadcastStream();
+  return ref.watch(authAssemblyProvider).watchSessions().asBroadcastStream();
 });
 
-/// auth provider 서버 상태 probe 주기 provider.
+/// provider set invalidation polling이 사용할 기본 probe 간격.
+///
+/// 현재는 Firebase watcher가 사용하며, probe 전략이 바뀌면 이 값의 소비처도 함께 확인해야 한다.
 final authProviderProbeIntervalProvider = Provider<Duration>((ref) {
   return const Duration(seconds: 30);
 });
 
-/// auth provider invalidation watcher provider.
-final authProviderInvalidationWatcherProvider =
+/// 선택된 provider set이 제공하는 invalidation watcher factory.
+///
+/// session provider는 구체 runtime을 직접 알지 않고 이 factory를 통해 provider-side invalidation을 구독한다.
+final authInvalidationWatcherProvider =
     Provider<AuthProviderInvalidationWatcher>((ref) {
-      final firebaseAuth = ref.watch(firebaseAuthProvider);
+      final assembly = ref.watch(authAssemblyProvider);
       final probeInterval = ref.watch(authProviderProbeIntervalProvider);
 
-      return (uid) => _watchAuthProviderInvalidation(
-        firebaseAuth: firebaseAuth,
-        uid: uid,
-        probeInterval: probeInterval,
-      );
+      return assembly.createInvalidationWatcher(probeInterval: probeInterval);
     });
 
-/// auth session observation stream provider.
-final authSessionObservationStreamProvider =
-    Provider<Stream<AuthSessionObservation>>((ref) {
-      final authSessions = ref.watch(authSessionStreamProvider);
-      final usersDataSource = ref.watch(usersDocumentDataSourceProvider);
-      final watchAuthProviderInvalidation = ref.watch(
-        authProviderInvalidationWatcherProvider,
-      );
-      final recoveryInFlightCount = ref.watch(
-        authSessionRecoveryInFlightCountProvider.notifier,
-      );
-
-      return _watchAuthSessionObservation(
-        authSessions: authSessions,
-        usersDataSource: usersDataSource,
-        watchAuthProviderInvalidation: watchAuthProviderInvalidation,
-        recoveryInFlightCount: recoveryInFlightCount,
-      );
-    });
-
-/// 현재 auth session observation provider.
-final authSessionObservationProvider = StreamProvider<AuthSessionObservation>((
+/// raw session, user document fact, provider invalidation을 하나의 observation으로 합친다.
+///
+/// bootstrap의 forced logout wiring은 public session이 아니라 이 observation을 구독한다.
+final authObservationStreamProvider = Provider<Stream<AuthSessionObservation>>((
   ref,
 ) {
-  return ref.watch(authSessionObservationStreamProvider);
+  final authSessions = ref.watch(authSessionStreamProvider);
+  final usersDataSource = ref.watch(usersDocumentDataSourceProvider);
+  final watchAuthProviderInvalidation = ref.watch(
+    authInvalidationWatcherProvider,
+  );
+  final recoveryInFlightCount = ref.watch(authRecoveryCountProvider.notifier);
+
+  return _watchAuthSessionObservation(
+    authSessions: authSessions,
+    usersDataSource: usersDataSource,
+    watchAuthProviderInvalidation: watchAuthProviderInvalidation,
+    recoveryInFlightCount: recoveryInFlightCount,
+  );
 });
 
-/// app이 공식적으로 소비하는 auth session public contract provider.
+/// bootstrap과 테스트가 내부 관찰 상태를 읽을 때 사용하는 provider.
+final authObservationProvider = StreamProvider<AuthSessionObservation>((ref) {
+  return ref.watch(authObservationStreamProvider);
+});
+
+/// app redirect와 root runtime이 소비하는 최종 auth session public contract.
+///
+/// 외부는 이 provider만 보면 되고, recovery/userReady/providerReady 같은 내부 상태는 노출하지 않는다.
 final authSessionProvider = Provider<AuthSession>((ref) {
-  return switch (ref.watch(authSessionObservationProvider)) {
+  return switch (ref.watch(authObservationProvider)) {
     AsyncData<AuthSessionObservation>(value: final observation) =>
       _resolvePublicAuthSession(observation),
     AsyncError<AuthSessionObservation>() => const Pending(),
@@ -142,6 +111,7 @@ Stream<AuthSessionObservation> _watchAuthSessionObservation({
     var userReady = true;
     var providerReady = true;
 
+    // user document와 provider invalidation을 합쳐 단일 observation으로 내보낸다.
     void emitObservation() {
       controller.add(
         AuthSessionObservation(
@@ -227,6 +197,7 @@ Stream<AuthSessionObservation> _watchAuthSessionObservation({
   });
 }
 
+/// users/{uid} raw fact를 session invalidation 신호로 바꾼다.
 AuthSessionInvalidation? _resolveUserDocumentInvalidation({
   required Authenticated session,
   required UserDocumentServerState userState,
@@ -255,6 +226,7 @@ AuthSessionInvalidation? _resolveUserDocumentInvalidation({
   return null;
 }
 
+/// 내부 observation을 외부 public session contract로 축약한다.
 AuthSession _resolvePublicAuthSession(AuthSessionObservation observation) {
   if (observation.authenticated == null) {
     return const Unauthenticated();
@@ -271,6 +243,7 @@ AuthSession _resolvePublicAuthSession(AuthSessionObservation observation) {
   return observation.authenticated!;
 }
 
+/// 내부 invalidation reason을 public invalid reason으로 매핑한다.
 InvalidReason _mapPublicInvalidReason(AuthSessionInvalidation invalidation) {
   return switch (invalidation.reason) {
     AuthSessionInvalidationReason.missingUserDocument ||
@@ -281,68 +254,4 @@ InvalidReason _mapPublicInvalidReason(AuthSessionInvalidation invalidation) {
     AuthSessionInvalidationReason.disabledAuthProviderUser =>
       InvalidReason.disabled,
   };
-}
-
-Stream<AuthSessionInvalidation?> _watchAuthProviderInvalidation({
-  required FirebaseAuth firebaseAuth,
-  required String uid,
-  required Duration probeInterval,
-}) {
-  return Stream<AuthSessionInvalidation?>.multi((controller) {
-    Timer? probeTimer;
-
-    Future<void> probe() async {
-      final user = firebaseAuth.currentUser;
-
-      if (user == null || user.uid != uid) {
-        controller.add(null);
-        return;
-      }
-
-      try {
-        await user.reload();
-        final refreshedUser = firebaseAuth.currentUser;
-
-        if (refreshedUser == null || refreshedUser.uid != uid) {
-          controller.add(
-            AuthSessionInvalidation(
-              uid: uid,
-              reason: AuthSessionInvalidationReason.missingAuthProviderUser,
-            ),
-          );
-          return;
-        }
-
-        controller.add(null);
-      } on FirebaseAuthException catch (error) {
-        switch (error.code) {
-          case 'user-not-found':
-            controller.add(
-              AuthSessionInvalidation(
-                uid: uid,
-                reason: AuthSessionInvalidationReason.missingAuthProviderUser,
-              ),
-            );
-          case 'user-disabled':
-            controller.add(
-              AuthSessionInvalidation(
-                uid: uid,
-                reason: AuthSessionInvalidationReason.disabledAuthProviderUser,
-              ),
-            );
-          default:
-            controller.add(null);
-        }
-      } catch (_) {
-        controller.add(null);
-      }
-    }
-
-    unawaited(probe());
-    probeTimer = Timer.periodic(probeInterval, (_) => unawaited(probe()));
-
-    controller.onCancel = () {
-      probeTimer?.cancel();
-    };
-  });
 }

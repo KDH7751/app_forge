@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:app_forge/engine/engine.dart';
 
 import '../../auth/domain/core/result.dart';
-import '../../auth/state/logout_controller.dart';
+import '../../auth/state/controllers/logout_controller.dart';
 import 'change_password_section.dart';
 import 'delete_account_section.dart';
 import 'profile_action_error_report_helper.dart';

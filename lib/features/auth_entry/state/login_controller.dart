@@ -86,9 +86,7 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
       clearPasswordError: true,
     );
 
-    final recoveryCount = ref.read(
-      authSessionRecoveryInFlightCountProvider.notifier,
-    );
+    final recoveryCount = ref.read(authRecoveryCountProvider.notifier);
     recoveryCount.state += 1;
 
     try {

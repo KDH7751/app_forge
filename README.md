@@ -14,7 +14,7 @@ Feature를 추가하는 방식으로 확장되어야 한다.
 
 ## 현재 상태
 
-현재 Phase 3.5까지 완료되었다.
+현재 Phase 3.6까지 완료되었다.
 
 구현된 범위:
 
@@ -23,9 +23,11 @@ Feature를 추가하는 방식으로 확장되어야 한다.
 - route matching
 - NavigationState
 - EngineShell / FeatureShell
-- Firebase bootstrap 진입 (`initializeApp`)
+- app plugin 기반 Firebase runtime preparation
+- app provider set composition (`auth / domain data / file/storage / analytics/crash`)
 - auth 기능 (login / signup / logout / reset / changePassword / deleteAccount)
 - auth / auth_entry 구조 분리
+- AuthFacade + ...Action + auth provider set assembly
 - AuthSession public contract (`Authenticated / Unauthenticated / Invalid / Pending`)
 - app layer auth redirect
 - users/{uid} upsert 정책
@@ -85,15 +87,24 @@ app 설정은 반드시 아래 3개 파일로 수렴한다.
 
 이 외의 파일이 두 번째 composition root가 되면 안 된다.
 
+- `app_plugins.dart` 상단: 사용자가 직접 수정하는 provider set / 최소 config 입력
+- `app_plugins.dart` 하단: 입력으로부터 계산되는 plugin/runtime 파생값
+- `app_features.dart` 상단: 사용자가 직접 수정하는 feature/policy 입력
+- `app_features.dart` 하단: 입력으로부터 계산되는 route/redirect/error wiring 파생값
+
 ---
 
 ## 핵심 원칙
 
 - Engine은 app이나 Feature를 알지 않는다.
 - app 설정은 3개 파일로 수렴해야 한다.
+- `/app`의 provider 선택 축은 `auth`, `domain data`, `file/storage`, `analytics/crash`로 분리한다.
+- `auth`와 `domain data`는 둘 다 Firebase를 써도 같은 축으로 합치지 않는다.
 - Feature만 추가해도 앱이 확장될 수 있어야 한다.
 - Engine은 policy, flow, abstraction을 소유한다.
 - concrete 구현은 app이 주입한다.
+- app은 각 축에 대해 provider set, 최소 config, 앱 수준 정책 입력까지만 가진다.
+- auth capability는 선택된 auth provider set의 속성이며, app은 일부 비활성화만 할 수 있다.
 - Feature는 vertical slice로 확장된다.
 - Feature는 필요한 layer만 가진다.
 - UI는 ErrorDecision을 기반으로 표현만 수행한다.
@@ -155,6 +166,7 @@ app 설정은 반드시 아래 3개 파일로 수렴한다.
 
 - shell 고급 커스터마이징
 - route transition / analytics 확장
+- push / notification provider set
 - role/status 기반 접근 제어
 - 소셜 로그인
 - shared error / logger core 승격
@@ -170,6 +182,7 @@ app 설정은 반드시 아래 3개 파일로 수렴한다.
 - Phase 3.3: post-login account action(changePassword / deleteAccount) 완료
 - Phase 3.4: Session Integrity 완료
 - Phase 3.5: AuthSession public contract stabilization 완료
+- Phase 3.6: provider set 기반 app composition + auth assembly 정렬 완료
 
 이 상태부터는
 

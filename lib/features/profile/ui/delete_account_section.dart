@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/domain/core/result.dart';
 import '../../auth/state/auth_error_mapper.dart';
-import '../../auth/state/delete_account_controller.dart';
+import '../../auth/state/controllers/delete_account_controller.dart';
 import 'delete_account_confirm_dialog.dart';
 import 'profile_action_error_report_helper.dart';
 

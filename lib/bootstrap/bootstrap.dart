@@ -29,8 +29,9 @@ import '../app/app_config.dart';
 import '../app/app_features.dart';
 import '../app/app_plugins.dart';
 import '../features/auth/domain/session/auth_session.dart';
-import '../features/auth/state/providers/auth_app_input_provider.dart';
+import '../features/auth/state/providers/auth_setup_provider.dart';
 import '../features/auth/state/providers/auth_facade_provider.dart';
+import '../features/auth/state/providers/auth_session_models.dart';
 import '../features/auth/state/providers/auth_session_provider.dart';
 
 /// app root runtime 연결을 시작하는 host widget.
@@ -110,10 +111,11 @@ class _BootstrapState extends State<Bootstrap> {
     return ProviderScope(
       overrides: <Override>[
         navigationStateNotifierProvider.overrideWithValue(_navigationNotifier),
-        authAppInputProvider.overrideWithValue(
-          AuthAppInput(
-            backendFamily: appAuthBackendFamily,
-            capabilities: appAuthCapabilityConnections,
+        authSetupProvider.overrideWithValue(
+          AuthSetup(
+            provider: authProvider,
+            config: authConfig,
+            policy: authPolicy,
           ),
         ),
         ...widget.overrides,
@@ -171,7 +173,7 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
     );
     _authSessionObservationSubscription = ref
         .listenManual<AsyncValue<AuthSessionObservation>>(
-          authSessionObservationProvider,
+          authObservationProvider,
           (_, next) => _handleAuthSessionObservationChanged(next),
           fireImmediately: true,
         );

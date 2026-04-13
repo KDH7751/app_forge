@@ -1,117 +1,104 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/actions/firebase_change_password_action.dart';
-import '../../data/actions/firebase_delete_account_action.dart';
-import '../../data/actions/firebase_login_action.dart';
-import '../../data/actions/firebase_logout_action.dart';
-import '../../data/actions/firebase_reset_password_action.dart';
-import '../../data/actions/firebase_signup_action.dart';
 import '../../domain/actions/change_password_action.dart';
 import '../../domain/actions/delete_account_action.dart';
 import '../../domain/actions/login_action.dart';
 import '../../domain/actions/logout_action.dart';
 import '../../domain/actions/reset_password_action.dart';
 import '../../domain/actions/signup_action.dart';
-import 'auth_app_input_provider.dart';
-import 'auth_runtime_provider.dart';
+import 'auth_assembly_provider.dart';
+import 'auth_setup_provider.dart';
 
 /// login action assembly provider.
 final loginActionProvider = Provider<LoginAction?>((ref) {
-  final authInput = ref.watch(authAppInputProvider);
+  final setup = ref.watch(authSetupProvider);
+  final assembly = ref.watch(authAssemblyProvider);
 
-  if (!authInput.capabilities.loginConnected) {
+  if (!_isCapabilityEnabled(
+    assembly: assembly,
+    policy: setup.policy,
+    capability: AuthCapability.login,
+  )) {
     return null;
   }
 
-  switch (authInput.backendFamily) {
-    case AuthBackendFamily.firebase:
-      return FirebaseLoginAction(
-        firebaseAuth: ref.watch(firebaseAuthProvider),
-        usersDataSource: ref.watch(usersDocumentDataSourceProvider),
-        logger: ref.watch(authLoggerProvider),
-      );
-  }
+  return assembly.loginAction;
 });
 
 /// signup action assembly provider.
 final signupActionProvider = Provider<SignupAction?>((ref) {
-  final authInput = ref.watch(authAppInputProvider);
+  final setup = ref.watch(authSetupProvider);
+  final assembly = ref.watch(authAssemblyProvider);
 
-  if (!authInput.capabilities.signupConnected) {
+  if (!_isCapabilityEnabled(
+    assembly: assembly,
+    policy: setup.policy,
+    capability: AuthCapability.signup,
+  )) {
     return null;
   }
 
-  switch (authInput.backendFamily) {
-    case AuthBackendFamily.firebase:
-      return FirebaseSignupAction(
-        firebaseAuth: ref.watch(firebaseAuthProvider),
-        usersDataSource: ref.watch(usersDocumentDataSourceProvider),
-        logger: ref.watch(authLoggerProvider),
-      );
-  }
+  return assembly.signupAction;
 });
 
 /// reset password action assembly provider.
 final resetPasswordActionProvider = Provider<ResetPasswordAction?>((ref) {
-  final authInput = ref.watch(authAppInputProvider);
+  final setup = ref.watch(authSetupProvider);
+  final assembly = ref.watch(authAssemblyProvider);
 
-  if (!authInput.capabilities.resetPasswordConnected) {
+  if (!_isCapabilityEnabled(
+    assembly: assembly,
+    policy: setup.policy,
+    capability: AuthCapability.sendPasswordResetEmail,
+  )) {
     return null;
   }
 
-  switch (authInput.backendFamily) {
-    case AuthBackendFamily.firebase:
-      return FirebaseResetPasswordAction(
-        firebaseAuth: ref.watch(firebaseAuthProvider),
-        logger: ref.watch(authLoggerProvider),
-      );
-  }
+  return assembly.resetPasswordAction;
 });
 
 /// change password action assembly provider.
 final changePasswordActionProvider = Provider<ChangePasswordAction?>((ref) {
-  final authInput = ref.watch(authAppInputProvider);
+  final setup = ref.watch(authSetupProvider);
+  final assembly = ref.watch(authAssemblyProvider);
 
-  if (!authInput.capabilities.changePasswordConnected) {
+  if (!_isCapabilityEnabled(
+    assembly: assembly,
+    policy: setup.policy,
+    capability: AuthCapability.changePassword,
+  )) {
     return null;
   }
 
-  switch (authInput.backendFamily) {
-    case AuthBackendFamily.firebase:
-      return FirebaseChangePasswordAction(
-        firebaseAuth: ref.watch(firebaseAuthProvider),
-        logger: ref.watch(authLoggerProvider),
-      );
-  }
+  return assembly.changePasswordAction;
 });
 
 /// delete account action assembly provider.
 final deleteAccountActionProvider = Provider<DeleteAccountAction?>((ref) {
-  final authInput = ref.watch(authAppInputProvider);
+  final setup = ref.watch(authSetupProvider);
+  final assembly = ref.watch(authAssemblyProvider);
 
-  if (!authInput.capabilities.deleteAccountConnected) {
+  if (!_isCapabilityEnabled(
+    assembly: assembly,
+    policy: setup.policy,
+    capability: AuthCapability.deleteAccount,
+  )) {
     return null;
   }
 
-  switch (authInput.backendFamily) {
-    case AuthBackendFamily.firebase:
-      return FirebaseDeleteAccountAction(
-        firebaseAuth: ref.watch(firebaseAuthProvider),
-        usersDataSource: ref.watch(usersDocumentDataSourceProvider),
-        logger: ref.watch(authLoggerProvider),
-      );
-  }
+  return assembly.deleteAccountAction;
 });
 
 /// logout action assembly provider.
 final logoutActionProvider = Provider<LogoutAction>((ref) {
-  final authInput = ref.watch(authAppInputProvider);
-
-  switch (authInput.backendFamily) {
-    case AuthBackendFamily.firebase:
-      return FirebaseLogoutAction(
-        firebaseAuth: ref.watch(firebaseAuthProvider),
-        logger: ref.watch(authLoggerProvider),
-      );
-  }
+  return ref.watch(authAssemblyProvider).logoutAction;
 });
+
+bool _isCapabilityEnabled({
+  required AuthSetAssembly assembly,
+  required AuthActivationPolicy policy,
+  required AuthCapability capability,
+}) {
+  return assembly.supportedCapabilities.contains(capability) &&
+      !policy.disables(capability);
+}

@@ -4,6 +4,10 @@ import '../../domain/core/app_error.dart';
 import '../../domain/core/auth_logger.dart';
 import '../datasources/users_document_datasource.dart';
 
+/// Firebase action 구현들이 공통으로 쓰는 user email 추출 helper.
+///
+/// login/signup/changePassword/deleteAccount가 모두 같은 email 허용 규칙을 써야 하므로
+/// provider set 내부 helper로 모아둔다.
 String? resolveUserEmail(User? user) {
   final email = user?.email;
 
@@ -14,6 +18,10 @@ String? resolveUserEmail(User? user) {
   return email;
 }
 
+/// users 문서 후처리가 실패했을 때 auth 세션 흔적을 정리하는 공통 rollback helper.
+///
+/// login/signup concrete action이 함께 사용하므로,
+/// rollback 로그와 fallback 메시지도 여기서 일관되게 닫는다.
 Future<void> safeRollbackSignOut({
   required FirebaseAuth firebaseAuth,
   required AuthLogger logger,
@@ -34,6 +42,7 @@ Future<void> safeRollbackSignOut({
   }
 }
 
+/// recent login이 필요한 action에서 재인증을 수행하는 공통 helper.
 Future<void> reauthenticate({
   required User user,
   required String email,
@@ -47,6 +56,10 @@ Future<void> reauthenticate({
   return user.reauthenticateWithCredential(credential);
 }
 
+/// auth provider account 삭제 후 남을 수 있는 users 문서를 즉시 정리한다.
+///
+/// deleteAccount action의 성공 의미를 승격하지는 않고,
+/// partial delete 상황에서 cleanup만 보조한다.
 Future<bool> cleanupDeletedAccountDocument({
   required UsersDocumentDataSource usersDataSource,
   required AuthLogger logger,
@@ -91,6 +104,7 @@ Future<bool> cleanupDeletedAccountDocument({
   return false;
 }
 
+/// Firebase login 오류를 auth AppError로 매핑한다.
 AppError mapLoginError(FirebaseAuthException error) {
   switch (error.code) {
     case 'user-not-found':
@@ -107,6 +121,7 @@ AppError mapLoginError(FirebaseAuthException error) {
   }
 }
 
+/// Firebase signup 오류를 auth AppError로 매핑한다.
 AppError mapSignupError(FirebaseAuthException error) {
   switch (error.code) {
     case 'email-already-in-use':
@@ -122,6 +137,7 @@ AppError mapSignupError(FirebaseAuthException error) {
   }
 }
 
+/// Firebase reset password 오류를 auth AppError로 매핑한다.
 AppError mapResetError(FirebaseAuthException error) {
   switch (error.code) {
     case 'user-not-found':
@@ -135,6 +151,7 @@ AppError mapResetError(FirebaseAuthException error) {
   }
 }
 
+/// Firebase change password 오류를 auth AppError로 매핑한다.
 AppError mapChangePasswordError(FirebaseAuthException error) {
   switch (error.code) {
     case 'wrong-password':
@@ -149,6 +166,7 @@ AppError mapChangePasswordError(FirebaseAuthException error) {
   }
 }
 
+/// Firebase delete account auth-side 오류를 auth AppError로 매핑한다.
 AppError mapDeleteAccountAuthError(FirebaseAuthException error) {
   switch (error.code) {
     case 'wrong-password':
@@ -161,6 +179,7 @@ AppError mapDeleteAccountAuthError(FirebaseAuthException error) {
   }
 }
 
+/// Firestore users 문서 작업 오류를 auth AppError로 매핑한다.
 AppError mapFirestoreError(FirebaseException error) {
   switch (error.code) {
     case 'unavailable':
