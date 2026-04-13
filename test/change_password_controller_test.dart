@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:app_forge/features/auth/domain/app_error.dart';
-import 'package:app_forge/features/auth/domain/auth_repository.dart';
-import 'package:app_forge/features/auth/domain/change_password_input.dart';
-import 'package:app_forge/features/auth/domain/delete_account_input.dart';
-import 'package:app_forge/features/auth/domain/result.dart';
-import 'package:app_forge/features/auth/state/auth_repository_provider.dart';
+import 'package:app_forge/features/auth/domain/core/app_error.dart';
+import 'package:app_forge/features/auth/domain/auth_facade.dart';
+import 'package:app_forge/features/auth/domain/core/result.dart';
+import 'package:app_forge/features/auth/domain/models/change_password_input.dart';
+import 'package:app_forge/features/auth/domain/models/delete_account_input.dart';
+import 'package:app_forge/features/auth/state/providers/auth_facade_provider.dart';
 import 'package:app_forge/features/auth/state/change_password_controller.dart';
 
 void main() {
@@ -15,8 +15,8 @@ void main() {
     () async {
       final container = ProviderContainer(
         overrides: <Override>[
-          authRepositoryProvider.overrideWithValue(
-            _ControllerFakeAuthRepository(
+          authFacadeProvider.overrideWithValue(
+            _ControllerFakeAuthFacade(
               changePasswordResult: const Result<void>.failure(
                 AppError.wrongPassword,
               ),
@@ -48,8 +48,8 @@ void main() {
     () async {
       final container = ProviderContainer(
         overrides: <Override>[
-          authRepositoryProvider.overrideWithValue(
-            _ControllerFakeAuthRepository(
+          authFacadeProvider.overrideWithValue(
+            _ControllerFakeAuthFacade(
               changePasswordResult: const Result<void>.success(null),
             ),
           ),
@@ -79,8 +79,8 @@ void main() {
   );
 }
 
-class _ControllerFakeAuthRepository implements AuthRepository {
-  _ControllerFakeAuthRepository({required this.changePasswordResult});
+class _ControllerFakeAuthFacade implements AuthFacade {
+  _ControllerFakeAuthFacade({required this.changePasswordResult});
 
   final Result<void> changePasswordResult;
 

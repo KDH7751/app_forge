@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../auth/domain/app_error.dart';
-import '../../auth/domain/result.dart';
-import '../../auth/state/auth_repository_provider.dart';
-import '../../auth/state/auth_session_provider.dart';
+import '../../auth/domain/core/app_error.dart';
+import '../../auth/domain/core/result.dart';
+import '../../auth/state/providers/auth_facade_provider.dart';
+import '../../auth/state/providers/auth_session_provider.dart';
 
 /// login form controller provider.
 final loginControllerProvider =
@@ -68,7 +68,7 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
 
   Future<Result<void>> submit() async {
     final validation = ref
-        .read(authRepositoryProvider)
+        .read(authFacadeProvider)
         .validateLogin(email: state.email, password: state.password);
 
     if (validation case Failure<void>(error: final error)) {
@@ -93,7 +93,7 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
 
     try {
       final result = await ref
-          .read(authRepositoryProvider)
+          .read(authFacadeProvider)
           .login(email: state.email.trim(), password: state.password);
 
       if (result case Failure<void>()) {

@@ -1,12 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../domain/app_logger.dart';
-import '../domain/auth_repository.dart';
-import '../domain/auth_session.dart';
-import 'auth_repository_firebase.dart';
-import 'debug_app_logger.dart';
-import 'users_document_datasource.dart';
+import '../../domain/core/auth_logger.dart';
+import '../../domain/session/auth_session.dart';
+import '../datasources/users_document_datasource.dart';
+import '../debug_auth_logger.dart';
 
 /// auth data layer의 runtime dependency factory 모음.
 FirebaseAuth createFirebaseAuth() {
@@ -19,8 +17,8 @@ FirebaseFirestore createFirebaseFirestore() {
 }
 
 /// auth data layer의 logger factory.
-AppLogger createAppLogger() {
-  return const DebugAppLogger();
+AuthLogger createAuthLogger() {
+  return const DebugAuthLogger();
 }
 
 /// auth data layer의 users datasource factory.
@@ -28,19 +26,6 @@ UsersDocumentDataSource createUsersDocumentDataSource({
   required FirebaseFirestore firestore,
 }) {
   return UsersDocumentDataSource(firestore: firestore);
-}
-
-/// auth data layer의 repository factory.
-AuthRepository createAuthRepository({
-  required FirebaseAuth firebaseAuth,
-  required UsersDocumentDataSource usersDataSource,
-  required AppLogger logger,
-}) {
-  return AuthRepositoryFirebase(
-    firebaseAuth: firebaseAuth,
-    usersDataSource: usersDataSource,
-    logger: logger,
-  );
 }
 
 /// auth data layer의 session stream adapter.

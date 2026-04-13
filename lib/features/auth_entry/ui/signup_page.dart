@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:app_forge/engine/engine.dart';
 
-import '../../auth/domain/result.dart';
+import '../../auth/domain/core/result.dart';
 import '../state/auth_entry_error_report_helper.dart';
 import '../state/auth_entry_error_mapper.dart';
 import '../state/signup_controller.dart';

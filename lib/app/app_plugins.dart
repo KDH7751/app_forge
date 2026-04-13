@@ -17,12 +17,18 @@ import 'package:app_forge/engine/engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import '../features/auth/state/providers/auth_app_input_provider.dart';
+
+/// app이 auth 전체에 대해 선택한 backend family.
+final appAuthBackendFamily = AuthBackendFamily.firebase;
+
 /// app이 실제로 사용할 plugin 등록 목록.
 ///
 /// 이 목록에 따라 app 시작 전에 준비되는
 /// 외부 시스템 연결 범위가 달라진다.
 final appPlugins = <EnginePlugin>[
-  const EnginePlugin(name: 'firebase_core', run: _runFirebaseCorePlugin),
+  if (appAuthBackendFamily == AuthBackendFamily.firebase)
+    const EnginePlugin(name: 'firebase_core', run: _runFirebaseCorePlugin),
 ];
 
 /// app에서 사용하는 logger 조합.

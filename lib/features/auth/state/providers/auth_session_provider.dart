@@ -10,6 +10,7 @@
 /// - auth는 UI page를 소유하지 않음.
 /// - FirebaseUser를 직접 노출하지 않음.
 /// - redirect 판단은 app layer가 소유함.
+/// - facade/action assembly와 독립된 session 기반 축이다.
 /// ===================================================================
 
 import 'dart:async';
@@ -17,10 +18,10 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/auth_data_factory.dart';
-import '../data/users_document_datasource.dart';
-import '../domain/auth_session.dart';
-import 'auth_repository_provider.dart';
+import '../../data/datasources/users_document_datasource.dart';
+import '../../data/factories/auth_runtime_factory.dart';
+import '../../domain/session/auth_session.dart';
+import 'auth_runtime_provider.dart';
 
 /// 서버 계정 invalid 사유.
 enum AuthSessionInvalidationReason {
@@ -322,7 +323,6 @@ Stream<AuthSessionInvalidation?> _watchAuthProviderInvalidation({
                 reason: AuthSessionInvalidationReason.missingAuthProviderUser,
               ),
             );
-            return;
           case 'user-disabled':
             controller.add(
               AuthSessionInvalidation(
@@ -330,10 +330,8 @@ Stream<AuthSessionInvalidation?> _watchAuthProviderInvalidation({
                 reason: AuthSessionInvalidationReason.disabledAuthProviderUser,
               ),
             );
-            return;
           default:
             controller.add(null);
-            return;
         }
       } catch (_) {
         controller.add(null);
@@ -341,9 +339,7 @@ Stream<AuthSessionInvalidation?> _watchAuthProviderInvalidation({
     }
 
     unawaited(probe());
-    probeTimer = Timer.periodic(probeInterval, (_) {
-      unawaited(probe());
-    });
+    probeTimer = Timer.periodic(probeInterval, (_) => unawaited(probe()));
 
     controller.onCancel = () {
       probeTimer?.cancel();

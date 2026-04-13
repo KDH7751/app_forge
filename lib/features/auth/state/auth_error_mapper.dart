@@ -1,4 +1,4 @@
-import '../domain/app_error.dart';
+import '../domain/core/app_error.dart';
 
 /// auth UI에서 재사용하는 nullable 에러 문구 매퍼.
 String? mapAuthErrorText(Object? error) {

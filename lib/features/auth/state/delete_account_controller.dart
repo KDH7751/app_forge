@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../domain/app_error.dart';
-import '../domain/delete_account_input.dart';
-import '../domain/result.dart';
-import 'auth_repository_provider.dart';
+import '../domain/core/app_error.dart';
+import '../domain/core/result.dart';
+import '../domain/models/delete_account_input.dart';
+import 'providers/auth_facade_provider.dart';
 
 /// delete account controller provider.
 final deleteAccountControllerProvider =
@@ -60,7 +60,7 @@ class DeleteAccountController
   Future<Result<void>> submit() async {
     final input = DeleteAccountInput(currentPassword: state.currentPassword);
     final validation = ref
-        .read(authRepositoryProvider)
+        .read(authFacadeProvider)
         .validateDeleteAccount(input);
 
     if (validation case Failure<void>(error: final error)) {
@@ -73,7 +73,7 @@ class DeleteAccountController
 
     state = state.copyWith(isLoading: true, clearCurrentPasswordError: true);
 
-    final result = await ref.read(authRepositoryProvider).deleteAccount(input);
+    final result = await ref.read(authFacadeProvider).deleteAccount(input);
 
     if (result case Failure<void>(error: final error)) {
       state = state.copyWith(

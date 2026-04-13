@@ -15,8 +15,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:app_forge/engine/engine.dart';
-import 'package:app_forge/features/auth/domain/auth_session.dart';
+import 'package:app_forge/features/auth/domain/session/auth_session.dart';
 import 'package:app_forge/features/auth/state/auth_error_mapper.dart';
+import 'package:app_forge/features/auth/state/providers/auth_app_input_provider.dart';
 import 'package:app_forge/features/auth_entry/state/auth_entry_notice.dart';
 import 'package:app_forge/features/auth_entry/ui/login_page.dart';
 import 'package:app_forge/features/auth_entry/ui/reset_password_page.dart';
@@ -24,6 +25,15 @@ import 'package:app_forge/features/auth_entry/ui/signup_page.dart';
 import '../features/home/ui/home_page.dart';
 import '../features/posts/ui/post_detail_page.dart';
 import '../features/profile/ui/profile_page.dart';
+
+/// app이 auth 기능별로 연결한 상태.
+final appAuthCapabilityConnections = const AuthCapabilityConnections(
+  loginConnected: true,
+  signupConnected: true,
+  resetPasswordConnected: true,
+  changePasswordConnected: true,
+  deleteAccountConnected: true,
+);
 
 /// 이 앱이 실제로 활성화하는 feature 목록.
 ///

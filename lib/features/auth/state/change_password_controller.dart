@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../domain/app_error.dart';
-import '../domain/change_password_input.dart';
-import '../domain/result.dart';
-import 'auth_repository_provider.dart';
+import '../domain/core/app_error.dart';
+import '../domain/core/result.dart';
+import '../domain/models/change_password_input.dart';
+import 'providers/auth_facade_provider.dart';
 
 /// change password controller provider.
 final changePasswordControllerProvider =
@@ -111,7 +111,7 @@ class ChangePasswordController
       confirmNewPassword: state.confirmNewPassword,
     );
     final validation = ref
-        .read(authRepositoryProvider)
+        .read(authFacadeProvider)
         .validateChangePassword(input);
 
     if (validation case Failure<void>(error: final error)) {
@@ -128,7 +128,7 @@ class ChangePasswordController
       clearConfirmNewPasswordError: true,
     );
 
-    final result = await ref.read(authRepositoryProvider).changePassword(input);
+    final result = await ref.read(authFacadeProvider).changePassword(input);
 
     if (result case Failure<void>(error: final error)) {
       state = _applyFieldError(

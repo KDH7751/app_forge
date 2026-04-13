@@ -7,16 +7,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:app_forge/bootstrap/bootstrap.dart';
 import 'package:app_forge/engine/engine.dart';
 import 'package:app_forge/app/app_config.dart';
-import 'package:app_forge/features/auth/domain/app_error.dart';
-import 'package:app_forge/features/auth/domain/auth_repository.dart';
-import 'package:app_forge/features/auth/domain/auth_session.dart';
-import 'package:app_forge/features/auth/domain/auth_validation.dart';
-import 'package:app_forge/features/auth/domain/change_password_input.dart';
-import 'package:app_forge/features/auth/domain/delete_account_input.dart';
-import 'package:app_forge/features/auth/domain/result.dart';
-import 'package:app_forge/features/auth/data/users_document_datasource.dart';
-import 'package:app_forge/features/auth/state/auth_repository_provider.dart';
-import 'package:app_forge/features/auth/state/auth_session_provider.dart';
+import 'package:app_forge/features/auth/domain/core/app_error.dart';
+import 'package:app_forge/features/auth/domain/auth_facade.dart';
+import 'package:app_forge/features/auth/domain/core/result.dart';
+import 'package:app_forge/features/auth/domain/models/change_password_input.dart';
+import 'package:app_forge/features/auth/domain/models/delete_account_input.dart';
+import 'package:app_forge/features/auth/domain/session/auth_session.dart';
+import 'package:app_forge/features/auth/domain/validation/auth_validation.dart';
+import 'package:app_forge/features/auth/data/datasources/users_document_datasource.dart';
+import 'package:app_forge/features/auth/state/providers/auth_facade_provider.dart';
+import 'package:app_forge/features/auth/state/providers/auth_runtime_provider.dart';
+import 'package:app_forge/features/auth/state/providers/auth_session_provider.dart';
 
 /// router shell / auth_entry 흐름 검증용 widget test 묶음.
 void main() {
@@ -1004,7 +1005,7 @@ Bootstrap _buildBootstrapWithUserState(
       logger: const _NoopLogger(),
     ),
     overrides: <Override>[
-      authRepositoryProvider.overrideWithValue(repository),
+      authFacadeProvider.overrideWithValue(repository),
       authSessionStreamProvider.overrideWithValue(sessionSource.stream),
       usersDocumentDataSourceProvider.overrideWithValue(
         _FakeUsersDocumentDataSource(userStateSource),
@@ -1112,7 +1113,7 @@ class _FakeAuthProviderInvalidationSource {
   }
 }
 
-class _FakeAuthRepository implements AuthRepository {
+class _FakeAuthRepository implements AuthFacade {
   _FakeAuthRepository({
     required _FakeAuthSessionSource sessionSource,
     this.loginResult,

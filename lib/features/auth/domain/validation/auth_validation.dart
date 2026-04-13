@@ -1,7 +1,7 @@
-import 'app_error.dart';
-import 'change_password_input.dart';
-import 'delete_account_input.dart';
-import 'result.dart';
+import '../core/app_error.dart';
+import '../core/result.dart';
+import '../models/change_password_input.dart';
+import '../models/delete_account_input.dart';
 
 /// login submit validation.
 Result<void> validateLoginInput({

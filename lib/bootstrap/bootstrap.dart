@@ -27,9 +27,11 @@ import 'package:app_forge/engine/engine.dart';
 
 import '../app/app_config.dart';
 import '../app/app_features.dart';
-import '../features/auth/domain/auth_session.dart';
-import '../features/auth/state/auth_repository_provider.dart';
-import '../features/auth/state/auth_session_provider.dart';
+import '../app/app_plugins.dart';
+import '../features/auth/domain/session/auth_session.dart';
+import '../features/auth/state/providers/auth_app_input_provider.dart';
+import '../features/auth/state/providers/auth_facade_provider.dart';
+import '../features/auth/state/providers/auth_session_provider.dart';
 
 /// app root runtime 연결을 시작하는 host widget.
 class Bootstrap extends StatefulWidget {
@@ -108,6 +110,12 @@ class _BootstrapState extends State<Bootstrap> {
     return ProviderScope(
       overrides: <Override>[
         navigationStateNotifierProvider.overrideWithValue(_navigationNotifier),
+        authAppInputProvider.overrideWithValue(
+          AuthAppInput(
+            backendFamily: appAuthBackendFamily,
+            capabilities: appAuthCapabilityConnections,
+          ),
+        ),
         ...widget.overrides,
       ],
       child: ErrorHubScope(
@@ -211,7 +219,7 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
     }
 
     _pendingForcedLogoutUid = invalidation.uid;
-    unawaited(ref.read(authRepositoryProvider).logout());
+    unawaited(ref.read(authFacadeProvider).logout());
   }
 
   /// ErrorHub stream을 구독해 전역 에러를 UI 알림으로 전달한다.

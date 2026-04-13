@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../domain/result.dart';
-import 'auth_repository_provider.dart';
+import '../domain/core/result.dart';
+import 'providers/auth_facade_provider.dart';
 
 /// logout controller provider.
 final logoutControllerProvider =
@@ -30,7 +30,7 @@ class LogoutController extends AutoDisposeNotifier<LogoutControllerState> {
   Future<Result<void>> submit() async {
     state = state.copyWith(isLoading: true);
 
-    final result = await ref.read(authRepositoryProvider).logout();
+    final result = await ref.read(authFacadeProvider).logout();
 
     if (result case Failure<void>()) {
       state = state.copyWith(isLoading: false);

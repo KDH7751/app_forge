@@ -1,5 +1,5 @@
 /// auth slice 내부 임시 generic core logger port.
-abstract interface class AppLogger {
+abstract interface class AuthLogger {
   /// 일반 정보 로그.
   void info(String message);
 

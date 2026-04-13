@@ -1,4 +1,4 @@
-import '../../auth/domain/app_error.dart';
+import '../../auth/domain/core/app_error.dart';
 
 /// auth_entry에서 사용하는 auth 에러 문구 매퍼.
 String mapAuthEntryError(AppError error) {

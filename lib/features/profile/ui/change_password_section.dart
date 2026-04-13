@@ -2,7 +2,7 @@ import 'package:app_forge/engine/engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../auth/domain/result.dart';
+import '../../auth/domain/core/result.dart';
 import '../../auth/state/auth_error_mapper.dart';
 import '../../auth/state/change_password_controller.dart';
 import 'profile_action_error_report_helper.dart';
