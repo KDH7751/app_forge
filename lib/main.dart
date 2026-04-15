@@ -12,7 +12,6 @@
 /// ===================================================================
 
 import 'modules/bootstrap/bootstrap.dart';
-import 'modules/bootstrap/bootstrap_runtime.dart';
 
 /// runtime 시작 진입점.
 void main() {

@@ -2,12 +2,12 @@
 
 ## 목적
 
-이 문서는 앞으로 Engine이나 공통 layer로 흡수할 수 있는 요소를 정리한다.
+이 문서는 앞으로 Engine이나 공통 layer로 흡수할 수 있는 후보를 기록한다.
+현재 구조의 source of truth나 잠긴 결정을 정의하는 문서는 아니다.
 
-현재 구현의 source of truth를 정의하는 문서가 아니라,
-재사용 후보와 우선순위를 기록하는 문서다.
+## 후보 분류
 
-## Must
+### Must
 
 - Engine public API barrel
 - Routing DSL
@@ -16,27 +16,28 @@
 - EngineShell
 - FeatureShell
 
-## Should
+### Should
 
 - logger / error reporting port
 - secure/local storage wrapper
 - auth session contract
 - Result / AppError core type
 
-현재 위 항목 중 `logger`, `auth session contract`, `Result / AppError`는 auth slice 내부에 최소 구현이 들어가 있다.
-아직 shared core로 승격된 상태는 아니다.
-
-`Result / AppError`는 현재 feature-level 최소 구현이며,
-global error system과는 별도 축으로 유지한다.
-
-## Could
+### Could
 
 - Firebase 외 backend를 위한 generic network layer
 - analytics / observe abstraction
 - reusable feature scaffolding helper
 
-## 원칙
+## 판단 기준
 
-- Engine으로 올리는 기준은 여러 앱에서 반복되는가이다.
-- 제품 policy가 강한 코드는 Engine으로 올리지 않는다.
-- 재사용성보다 설정 비용이 커지면 Engine 흡수를 다시 검토한다.
+- 여러 앱에서 반복되는가
+- 제품 policy가 강하게 묻어 있지 않은가
+- 재사용 이득이 설정 비용보다 큰가
+- Engine이나 공통 layer로 올려도 현재 경계를 흐리지 않는가
+
+## 범위 경계
+
+- 이 문서는 “지금 옮긴다”를 뜻하지 않는다.
+- 후보가 있다고 해서 현재 구조 결정을 다시 여는 것은 아니다.
+- 실제 승격 여부는 별도 결정 문서에서 잠근다.
