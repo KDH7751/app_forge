@@ -1,6 +1,8 @@
+// ignore_for_file: avoid_relative_lib_imports
+
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:app_forge/engine/engine.dart';
+import '../lib/engine/engine.dart';
 
 void main() {
   test(

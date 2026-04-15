@@ -1,10 +1,8 @@
+// ignore_for_file: avoid_relative_lib_imports
+
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:app_forge/features/auth/domain/core/app_error.dart';
-import 'package:app_forge/features/auth/domain/core/result.dart';
-import 'package:app_forge/features/auth/domain/models/change_password_input.dart';
-import 'package:app_forge/features/auth/domain/models/delete_account_input.dart';
-import 'package:app_forge/features/auth/domain/validation/auth_validation.dart';
+import '../lib/modules/auth/auth.dart';
 
 void main() {
   group('validateChangePasswordInput', () {

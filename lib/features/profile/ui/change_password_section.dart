@@ -1,10 +1,7 @@
-import 'package:app_forge/engine/engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../auth/domain/core/result.dart';
-import '../../auth/state/auth_error_mapper.dart';
-import '../../auth/state/controllers/change_password_controller.dart';
+import '../../../engine/engine.dart';
+import '../../../modules/auth/auth.dart';
 import 'profile_action_error_report_helper.dart';
 
 /// profile route에서 auth changePassword action을 소비하는 임시 UI 섹션.

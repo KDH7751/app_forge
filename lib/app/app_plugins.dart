@@ -15,11 +15,10 @@
 /// - 하단 파생 구역은 입력으로부터 계산되는 값이므로, 특별한 이유 없이 직접 수정하지 않는다.
 /// ===================================================================
 
-import 'package:app_forge/engine/engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
-
-import '../features/auth/state/providers/auth_setup_provider.dart';
+import '../engine/engine.dart';
+import '../modules/auth/auth.dart';
 
 /// -------------------------------------------------------------------
 /// User-Editable App Assembly Input

@@ -26,7 +26,7 @@ Feature를 추가하는 방식으로 확장되어야 한다.
 - app plugin 기반 Firebase runtime preparation
 - app provider set composition (`auth / domain data / file/storage / analytics/crash`)
 - auth 기능 (login / signup / logout / reset / changePassword / deleteAccount)
-- auth / auth_entry 구조 분리
+- reusable auth module과 project-level auth consumer feature 분리
 - AuthFacade + ...Action + auth provider set assembly
 - AuthSession public contract (`Authenticated / Unauthenticated / Invalid / Pending`)
 - app layer auth redirect
@@ -50,25 +50,28 @@ Feature를 추가하는 방식으로 확장되어야 한다.
 
 ---
 
-## 핵심 구조
+## 구조 해석 기준
 
 ```text
 lib/
-  main.dart
-  bootstrap/   # runtime bootstrap host
-  engine/      # 재사용 가능한 Engine layer
+  app/         # 이 프로젝트의 composition root
+  engine/      # domain-agnostic infrastructure
+  modules/     # 재사용 가능한 기본 module + foundation
+  features/    # project-level consumer feature
+    common/    # common.dart만 가진 project-level shared surface 위치
   ui_kit/      # 재사용 가능한 UI primitive와 token
-  app/         # 이 앱의 composition root
-  features/    # 제품 Feature
 ```
+
+현재 구조 해석은 `modules/bootstrap`, `modules/auth`, `features/auth_flow` 기준을 따른다.
 
 ---
 
 ## 구조 핵심 요약
 
-- engine → 구조 / 흐름 / policy를 소유한다
-- app → Engine, Plugin, Feature를 조립한다
-- feature → vertical slice로 기능을 확장한다
+- engine → domain-agnostic infrastructure를 소유한다
+- modules → 재사용 가능한 domain-aware module과 얇은 shared foundation을 소유한다
+- features → 이 프로젝트의 consumer flow와 product slice를 소유한다
+- app → modules와 features를 실제 앱으로 조립하는 composition root다
 
 - feature failure → Result<T> / AppError
 - global error → ErrorHub / ErrorPolicy / ErrorDecision
@@ -96,17 +99,17 @@ app 설정은 반드시 아래 3개 파일로 수렴한다.
 
 ## 핵심 원칙
 
-- Engine은 app이나 Feature를 알지 않는다.
+- Engine은 domain-agnostic runtime/routing/shell infrastructure와 abstraction을 소유한다.
+- Engine은 app, modules, features의 도메인 의미를 알지 않는다.
 - app 설정은 3개 파일로 수렴해야 한다.
-- `/app`의 provider 선택 축은 `auth`, `domain data`, `file/storage`, `analytics/crash`로 분리한다.
-- `auth`와 `domain data`는 둘 다 Firebase를 써도 같은 축으로 합치지 않는다.
-- Feature만 추가해도 앱이 확장될 수 있어야 한다.
-- Engine은 policy, flow, abstraction을 소유한다.
-- concrete 구현은 app이 주입한다.
-- app은 각 축에 대해 provider set, 최소 config, 앱 수준 정책 입력까지만 가진다.
-- auth capability는 선택된 auth provider set의 속성이며, app은 일부 비활성화만 할 수 있다.
-- Feature는 vertical slice로 확장된다.
-- Feature는 필요한 layer만 가진다.
+- reusable module과 project-specific feature를 구분해서 읽어야 한다.
+- `modules/foundation`은 modules/features가 함께 기대는 얇은 공통 기반 타입 위치이며 `AppError`, `Result`가 여기에 있다.
+- module은 공개 계약과 설정 표면을 중심으로 노출된다.
+- concrete 구현은 module 내부가 소유하고 app은 공개 표면으로 조립한다.
+- app은 provider 선택, 최소 config, 정책 입력, route/redirect/error wiring을 조립하는 composition root다.
+- `features/common`은 실제 `common.dart`만 가진 project-level shared surface 위치이며 아직 shared asset은 비어 있다.
+- `auth_flow`는 `auth_flow.dart` entry를 가진 consumer feature이며 auth module의 공개 표면을 소비한다.
+- feature는 module의 공개 표면을 소비하는 consumer slice로 확장된다.
 - UI는 ErrorDecision을 기반으로 표현만 수행한다.
 - engine은 에러를 해석하지 않는다.
 

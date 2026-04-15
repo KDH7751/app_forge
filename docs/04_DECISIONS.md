@@ -146,3 +146,52 @@
 - 2026-04-13: session은 facade/action assembly와 분리된 고정 기반 축으로 유지하고, public `AuthSession` contract와 redirect 소비 구조는 계속 유지한다.
 - 2026-04-13: `app_plugins.dart`는 상단에 사용자가 직접 수정하는 provider set / 최소 config 입력을 두고, 하단에 그 입력으로부터 계산되는 runtime/plugin 파생값을 둔다.
 - 2026-04-13: `app_features.dart`는 상단에 사용자가 직접 수정하는 feature/policy 입력을 두고, 하단에 그 입력으로부터 계산되는 route/redirect/error wiring 파생값을 둔다.
+
+## Phase 3.6 follow-up structure lock
+
+- 2026-04-14: 이번 구조 잠금은 Phase 3.6의 provider-set composition, auth session 고정 축, app 상단 입력/하단 파생 구분을 유지한 채 최상위 분류와 의존성 역전 기준만 다시 정렬한다.
+- 2026-04-14: `lib` 최상위 분류는 `app`, `engine`, `modules`, `features` 기준으로 읽고, `features/common`은 `features` 내부의 project-level shared asset 위치로만 읽는다.
+- 2026-04-14: `app`은 reusable module이 아니라 이 프로젝트의 composition root다.
+- 2026-04-14: `app`은 provider 선택, 최소 config, app 수준 policy 입력, feature exposure, route/redirect/error wiring 같은 project composition 입력과 파생 계산만 가진다.
+- 2026-04-14: `app`은 module 내부 concrete action, endpoint, parser, provider-specific implementation detail을 직접 소유하지 않는다.
+- 2026-04-14: `engine`은 domain-agnostic infrastructure다.
+- 2026-04-14: `engine`은 navigation, routing primitive, shell, notice, public Engine surface 같은 범용 infra만 가진다.
+- 2026-04-14: `engine`은 어떤 domain module이나 product feature도 모르며, `modules`, `features`, `features/common`, `app`의 도메인 의미를 소유하지 않는다.
+- 2026-04-14: `modules`는 다른 프로젝트로도 거의 그대로 들고 갈 수 있는 reusable base module이다.
+- 2026-04-14: `modules`는 domain을 알아도 되지만 project-specific UI, flow, feature 소비 로직은 가지지 않는다.
+- 2026-04-14: reusable module은 concrete consumer가 아니라 공개 계약과 설정 표면을 중심으로 노출되어야 한다.
+- 2026-04-14: `features`는 이 프로젝트에서 실제로 소비되는 product/consumer feature다.
+- 2026-04-14: `features`는 project-specific flow, UX, entry, product slice를 가진다.
+- 2026-04-14: `features/common`은 여러 feature가 함께 쓰는 consumer-side shared asset 위치이며 reusable module을 두는 장소가 아니다.
+- 2026-04-14: `features/common`은 misc/shared 창고처럼 남용하지 않는다.
+- 2026-04-14: `auth`는 일반 product feature가 아니라 reusable auth module로 해석한다.
+- 2026-04-14: `bootstrap`은 일반 product feature가 아니라 reusable startup/composition module로 해석한다.
+- 2026-04-14: `auth_flow`는 단순 entry screen이 아니라 이 프로젝트에서 auth를 실제로 소비하는 consumer feature다.
+- 2026-04-14: 현재 구조는 `auth -> lib/modules/auth/`, `bootstrap -> lib/modules/bootstrap/`, `auth_flow -> lib/features/auth_flow/` 기준으로 유지한다.
+- 2026-04-14: `modules`는 `engine`에 의존할 수 있다.
+- 2026-04-14: `modules`는 `app`이 제공하는 selection/config/policy 입력을 소비할 수 있다.
+- 2026-04-14: `modules`는 `features`나 `features/common`의 소비 UI/flow/product 구현에 의존하면 안 된다.
+- 2026-04-14: `features`는 `modules`의 공개 표면을 소비할 수 있다.
+- 2026-04-14: `features`는 `modules`의 concrete 구현 세부에 직접 의존하면 안 된다.
+- 2026-04-14: `features/common`은 project-level shared asset 위치일 뿐 상위 core/module이 아니며, `modules`가 여기에 의존하면 안 된다.
+- 2026-04-14: `app`은 composition root로서 module 내부 구현을 직접 제어하기보다 module이 노출한 설정 표면과 공개 계약을 통해 조립한다.
+- 2026-04-14: 허용 예시는 `features/auth_flow -> modules/auth` 공개 표면 소비, `app -> auth provider 선택/최소 config/정책 입력`, `modules/auth -> engine infra 사용`이다.
+- 2026-04-14: 금지 예시는 `features/auth_flow -> modules/auth` 내부 concrete 직접 의존, `app -> auth 개별 endpoint/path/parser/error mapping 직접 해석`, `modules/auth -> features/auth_flow` 의존, `modules/auth -> 다른 product feature 의존`이다.
+
+## Phase 3.6 structure reinforcement
+
+- 2026-04-14: `features/common`은 유지한다.
+- 2026-04-14: `features/common`은 현재 `common.dart` public surface만 두고 shared asset은 비워 둔 project-level shared 위치로 유지한다.
+- 2026-04-14: `features/common`은 project-level shared asset 위치이며 reusable module이나 misc/shared 창고로 사용하지 않는다.
+- 2026-04-14: `modules/foundation`을 실제 구조에 둔다.
+- 2026-04-14: `modules/foundation`은 engine이 아닌, modules/features가 함께 기대는 얇은 공통 기반 타입/계약 위치다.
+- 2026-04-14: `modules/foundation`의 public surface 파일은 `modules/foundation/foundation.dart`로 둔다.
+- 2026-04-14: `AppError`, `Result`는 `modules/foundation`의 공통 기반 타입으로 유지한다.
+- 2026-04-14: `modules/auth` 내부의 `core` 명칭은 유지하지 않는다.
+- 2026-04-14: 최상위 `modules`가 이미 reusable layer 의미를 가지므로, auth 내부 `core`는 의미 충돌을 만드는 이름으로 본다.
+- 2026-04-14: auth 밖으로도 읽히는 공통 성격은 `modules/foundation`으로 정리하고, auth 내부에 남는 것은 auth-local 이름으로 유지한다.
+- 2026-04-14: `auth_flow`는 project-level auth consumer feature로 유지한다.
+- 2026-04-14: `auth_flow`는 auth module의 공개 표면을 소비하는 프로젝트별 auth usage/flow/UX shell이며 provider 구현 세부를 직접 알지 않는다.
+- 2026-04-14: `auth_flow.dart`는 auth_flow feature entry로 유지하고, `authRecoveryCountProvider` 같은 session recovery tuning 값은 auth module 내부 concern으로 유지한다.
+- 2026-04-14: public surface 파일 기준은 `engine/engine.dart`, `modules/auth/auth.dart`, `modules/foundation/foundation.dart`, `features/common/common.dart`다.
+- 2026-04-14: `modules/bootstrap/bootstrap.dart`는 예외적으로 별도 barrel이 아니라 기능 파일 자체를 진입점으로 유지한다.

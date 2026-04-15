@@ -1,4 +1,4 @@
-import '../../auth/domain/core/app_error.dart';
+import '../../../modules/auth/auth.dart';
 
 /// profile UI가 로컬 처리 대신 루트 알림으로 올릴 auth 실패인지 판단한다.
 bool shouldReportProfileActionError(Object? error) {

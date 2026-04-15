@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:app_forge/engine/engine.dart';
-
-import '../../auth/domain/core/result.dart';
-import '../../auth/state/controllers/logout_controller.dart';
+import '../../../engine/engine.dart';
+import '../../../modules/auth/auth.dart';
 import 'change_password_section.dart';
 import 'delete_account_section.dart';
 import 'profile_action_error_report_helper.dart';

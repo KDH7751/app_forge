@@ -1,26 +1,19 @@
+// ignore_for_file: avoid_relative_lib_imports
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:app_forge/bootstrap/bootstrap.dart';
-import 'package:app_forge/engine/engine.dart';
-import 'package:app_forge/app/app_config.dart';
-import 'package:app_forge/features/auth/domain/core/app_error.dart';
-import 'package:app_forge/features/auth/domain/auth_facade.dart';
-import 'package:app_forge/features/auth/domain/core/result.dart';
-import 'package:app_forge/features/auth/domain/models/change_password_input.dart';
-import 'package:app_forge/features/auth/domain/models/delete_account_input.dart';
-import 'package:app_forge/features/auth/domain/session/auth_session.dart';
-import 'package:app_forge/features/auth/domain/validation/auth_validation.dart';
-import 'package:app_forge/features/auth/data/datasources/users_document_datasource.dart';
-import 'package:app_forge/features/auth/state/providers/auth_facade_provider.dart';
-import 'package:app_forge/features/auth/state/providers/auth_runtime_provider.dart';
-import 'package:app_forge/features/auth/state/providers/auth_session_models.dart';
-import 'package:app_forge/features/auth/state/providers/auth_session_provider.dart';
+import '../lib/app/app_config.dart';
+import '../lib/engine/engine.dart';
+import '../lib/modules/auth/auth.dart';
+import '../lib/modules/auth/data/datasources/users_document_datasource.dart';
+import '../lib/modules/auth/state/providers/auth_runtime_provider.dart';
+import '../lib/modules/bootstrap/bootstrap.dart';
 
-/// router shell / auth_entry 흐름 검증용 widget test 묶음.
+/// router shell / auth_flow 흐름 검증용 widget test 묶음.
 void main() {
   testWidgets('unauthenticated app redirects to login route', (tester) async {
     final sessionSource = _FakeAuthSessionSource();
@@ -32,7 +25,9 @@ void main() {
 
     expect(find.text('Email'), findsOneWidget);
     expect(
-      find.text('Standalone auth entry route outside the Engine shell.'),
+      find.text(
+        'Project auth flow that consumes the reusable auth module outside the Engine shell.',
+      ),
       findsOneWidget,
     );
     expect(find.byType(AppBar), findsNothing);

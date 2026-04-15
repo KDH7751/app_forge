@@ -15,14 +15,9 @@
 /// ===================================================================
 
 import 'package:flutter/material.dart';
-import 'package:app_forge/engine/engine.dart';
-import 'package:app_forge/features/auth/domain/session/auth_session.dart';
-import 'package:app_forge/features/auth/state/auth_error_mapper.dart';
-import 'package:app_forge/features/auth/state/providers/auth_setup_provider.dart';
-import 'package:app_forge/features/auth_entry/state/auth_entry_notice.dart';
-import 'package:app_forge/features/auth_entry/ui/login_page.dart';
-import 'package:app_forge/features/auth_entry/ui/reset_password_page.dart';
-import 'package:app_forge/features/auth_entry/ui/signup_page.dart';
+import '../engine/engine.dart';
+import '../features/auth_flow/auth_flow.dart';
+import '../modules/auth/auth.dart';
 import '../features/home/ui/home_page.dart';
 import '../features/posts/ui/post_detail_page.dart';
 import '../features/profile/ui/profile_page.dart';
@@ -51,7 +46,7 @@ final authPolicy = const AuthActivationPolicy(
 /// 사용자가 직접 화면 구조를 바꾸려면 하단 파생값 대신 이 목록을 수정하는 것이 기준이다.
 final appFeatures = <EngineFeature>[
   EngineFeature(
-    key: 'auth_entry',
+    key: 'auth_flow',
     routes: <RouteDef>[
       RouteDef(
         path: '/login',
@@ -60,8 +55,8 @@ final appFeatures = <EngineFeature>[
         useShell: false,
         showAppBar: false,
         builder: (_, state) => LoginPage(
-          notice: state.extra is AuthEntryNotice
-              ? state.extra! as AuthEntryNotice
+          notice: state.extra is AuthFlowNotice
+              ? state.extra! as AuthFlowNotice
               : null,
         ),
       ),
@@ -171,7 +166,7 @@ final appErrorNotificationTextMappers = <String? Function(Object?)>[
 /// app이 현재 잠금 기준으로 유지하는 auth redirect 정책.
 ///
 /// bootstrap router redirect는 최종 `AuthSession`과 현재 location만 이 함수에 넘긴다.
-/// 공개 auth entry route 집합이나 기본 진입 규칙을 바꾸면 app 전역 접근 흐름이 흔들린다.
+/// 공개 auth flow route 집합이나 기본 진입 규칙을 바꾸면 app 전역 접근 흐름이 흔들린다.
 /// 이번 구조에서는 redirect canonical policy 자체를 다시 설계하지 않고,
 /// 상단 feature 입력을 해석하는 app-level 결정 함수로만 유지한다.
 String? resolveAppRedirect({
@@ -183,24 +178,20 @@ String? resolveAppRedirect({
   }
 
   final normalizedLocation = normalizeLocationPath(location);
-  const publicAuthEntryRoutes = <String>{
-    '/login',
-    '/signup',
-    '/reset-password',
-  };
-  final isPublicAuthEntryRoute = publicAuthEntryRoutes.contains(
+  const publicAuthFlowRoutes = <String>{'/login', '/signup', '/reset-password'};
+  final isPublicAuthFlowRoute = publicAuthFlowRoutes.contains(
     normalizedLocation,
   );
 
-  if (authSession is Unauthenticated && !isPublicAuthEntryRoute) {
+  if (authSession is Unauthenticated && !isPublicAuthFlowRoute) {
     return '/login';
   }
 
-  if (authSession is Invalid && !isPublicAuthEntryRoute) {
+  if (authSession is Invalid && !isPublicAuthFlowRoute) {
     return '/login';
   }
 
-  if (authSession is Authenticated && isPublicAuthEntryRoute) {
+  if (authSession is Authenticated && isPublicAuthFlowRoute) {
     return '/home';
   }
 

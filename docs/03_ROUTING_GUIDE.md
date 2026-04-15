@@ -9,7 +9,7 @@ app이 조립하는 route registration을 기반으로 동작한다.
 
 Engine Router는 auth를 직접 알면 안 된다.
 redirect policy가 필요해지면 그 책임은 app이 가진다.
-auth entry page는 별도 auth_entry feature가 소유하고, auth는 그 기능을 지원만 한다.
+auth entry page는 project-level auth consumer feature가 소유하고, auth module은 그 기능을 지원만 한다.
 
 ## 현재 범위
 
@@ -123,8 +123,8 @@ shell 내부 route는 metadata로 제어한다.
 - `/profile`: shell + drawer
 - `/posts/:id`: shell 내부 detail, bottomNav/drawer 숨김
 
-`/login`, `/signup`, `/reset-password` route는 auth_entry feature의 page를 렌더링한다.
-auth_entry feature는 auth provider를 소비하지만 redirect는 직접 처리하지 않는다.
+`/login`, `/signup`, `/reset-password` route는 auth_flow feature entry(`auth_flow.dart`)가 노출하는 page를 렌더링한다.
+auth_flow feature는 auth module의 공개 표면만 소비하지만 redirect는 직접 처리하지 않는다.
 
 ## redirect 규칙
 
@@ -134,7 +134,7 @@ auth_entry feature는 auth provider를 소비하지만 redirect는 직접 처리
 - redirect는 에러를 해석하거나 UI를 제어하는 책임을 가지지 않는다.
 - redirect는 internal flag가 아니라 최종 `AuthSession` public contract만 소비한다.
 - invalid session 차단도 app layer redirect 판단에 포함되며, RouterEngine이 auth policy를 직접 해석하지 않는다.
-- bootstrap은 auth session observation 변화를 `refreshListenable`로 bridge하는 runtime wiring만 담당한다.
+- bootstrap module은 auth session observation 변화를 `refreshListenable`로 bridge하는 runtime wiring만 담당한다.
 - `Authenticated`는 보호 라우트를 허용한다.
 - `Unauthenticated`는 public auth entry로 보낸다.
 - `Invalid`는 public auth entry로 이탈시키고 강제 logout 흐름과 연결된다.
