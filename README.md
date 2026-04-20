@@ -7,7 +7,7 @@
 
 ## 현재 상태
 
-현재 Phase 3.6까지 완료되었다.
+현재 Phase 3.7까지 완료되었다.
 
 구현된 범위:
 
@@ -19,6 +19,7 @@
 - AuthSession public contract (`Authenticated / Unauthenticated / Invalid / Pending`)
 - app layer auth redirect와 Session Integrity
 - Result<T> / AppFailure 기반 feature failure 처리
+- feature failure baseline (`AppFailureType`, validation `fieldErrors`, auth normalization)
 - ErrorHub / ErrorPolicy / ErrorDecision 기반 전역 에러 처리
 - runZonedGuarded 기반 runtime bootstrap
 

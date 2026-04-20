@@ -32,8 +32,9 @@ class ResetControllerState {
   }) {
     return ResetControllerState(
       email: email ?? this.email,
-      emailFailure:
-          clearEmailFailure ? null : (emailFailure ?? this.emailFailure),
+      emailFailure: clearEmailFailure
+          ? emailFailure
+          : (emailFailure ?? this.emailFailure),
       isLoading: isLoading ?? this.isLoading,
       isSuccess: isSuccess ?? this.isSuccess,
     );
@@ -61,7 +62,11 @@ class ResetController extends AutoDisposeNotifier<ResetControllerState> {
         .validateReset(email: state.email);
 
     if (validation case Failure<void>(failure: final failure)) {
-      state = state.copyWith(emailFailure: failure, isSuccess: false);
+      state = state.copyWith(
+        emailFailure: _emailFailureFor(failure),
+        isSuccess: false,
+        clearEmailFailure: true,
+      );
 
       return validation;
     }
@@ -76,12 +81,25 @@ class ResetController extends AutoDisposeNotifier<ResetControllerState> {
         .read(authFacadeProvider)
         .sendPasswordResetEmail(email: state.email.trim());
 
-    if (result case Failure<void>()) {
-      state = state.copyWith(isLoading: false, isSuccess: false);
+    if (result case Failure<void>(failure: final failure)) {
+      state = state.copyWith(
+        isLoading: false,
+        isSuccess: false,
+        emailFailure: _emailFailureFor(failure),
+        clearEmailFailure: true,
+      );
       return result;
     }
 
     state = state.copyWith(isLoading: false, isSuccess: true);
     return result;
+  }
+
+  AppFailure? _emailFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.validation => failure.fieldFailure(AuthFailureField.email),
+      AppFailureType.notFound => failure,
+      _ => null,
+    };
   }
 }

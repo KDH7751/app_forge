@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
 import 'delete_account_confirm_dialog.dart';
-import 'profile_action_failure_report_helper.dart';
 
 /// profile route에서 auth deleteAccount action을 여는 임시 UI 섹션.
 class DeleteAccountSection extends ConsumerWidget {
@@ -52,18 +51,17 @@ class DeleteAccountSection extends ConsumerWidget {
                       }
 
                       if (result case Failure<void>(failure: final failure)) {
-                        final message = mapDeleteAccountFailureText(failure);
+                        final presentation =
+                            AuthFailurePresenter.presentForProfileAction(
+                              failure,
+                            );
 
-                        if (shouldReportProfileActionFailure(failure)) {
-                          reportUiError(
-                            context,
-                            failure,
-                            domainError: failure,
+                        if (presentation?.shouldReportToRootFeedback == true) {
+                          reportUiError(context, failure, domainError: failure);
+                        } else if (presentation != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(presentation.message)),
                           );
-                        } else if (message != null) {
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text(message)));
                         }
 
                         return;

@@ -21,6 +21,33 @@ feature 내부 비동기 실패와 validation 실패는 `Result<T>`와 `AppFailu
 - 파싱/전송/권한 오류를 UI까지 throw로 전달하지 않는다.
 - UI는 실패 원인 문자열보다 `AppFailure` 계약을 기준으로 동작한다.
 
+공통 계약 기준:
+
+- `AppFailureType`은 provider-independent 의미 이름만 사용한다.
+- `AppFailure` public contract는 `type`과 validation용 `fieldErrors`만 가진다.
+- validation failure는 별도 예외 모델로 분리하지 않고 `AppFailureType.validation`으로 수렴한다.
+- `fieldErrors`는 validation의 공식 필드 단위 표현이다.
+- raw provider code, exception class, backend status, provider 원문 메시지는 data/repository boundary 밖으로 올리지 않는다.
+- auth action failure contract와 `AuthSession` invalid public contract는 서로 다른 축이다.
+- 예를 들어 auth action mapping의 `unauthorized`는 action 실행 실패 의미이고, Phase 3.5의 `InvalidReason.disabled` 같은 session invalid 의미를 대체하거나 흡수하지 않는다.
+- 같은 raw provider 사실이라도 action 맥락이 다르면 다른 `AppFailureType`으로 정규화될 수 있다.
+- feature-level failure 소비 기본 패턴은 feature별 failure presenter로 유지한다.
+- presenter는 정규화된 `AppFailure`만 받아 사용자 문구와 로컬 처리/공용 피드백 후보 판단을 만든다.
+- feature failure가 app root 공용 피드백 채널로 전달될 수 있어도 global/runtime error 모델로 승격하지 않는다.
+
+`AppFailureType` 공식 범위:
+
+- `validation`
+- `invalidCredentials`
+- `unauthorized`
+- `permissionDenied`
+- `notFound`
+- `conflict`
+- `rateLimited`
+- `network`
+- `unavailable`
+- `unknown`
+
 ## 2. Global/runtime error
 
 앱 전역/runtime error는 `ErrorHub` 기반 중앙 처리 흐름을 사용한다.

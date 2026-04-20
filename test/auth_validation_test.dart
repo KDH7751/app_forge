@@ -16,9 +16,12 @@ void main() {
       );
 
       expect(result, isA<Failure<void>>());
+      final failure = (result as Failure<void>).failure;
+
+      expect(failure.type, AppFailureType.validation);
       expect(
-        (result as Failure<void>).failure.type,
-        AppFailureType.samePassword,
+        failure.fieldError(AuthFailureField.newPassword)?.type,
+        ValidationFieldErrorType.sameValue,
       );
     });
 
@@ -32,9 +35,12 @@ void main() {
       );
 
       expect(result, isA<Failure<void>>());
+      final failure = (result as Failure<void>).failure;
+
+      expect(failure.type, AppFailureType.validation);
       expect(
-        (result as Failure<void>).failure.type,
-        AppFailureType.confirmPasswordRequired,
+        failure.fieldError(AuthFailureField.confirmNewPassword)?.type,
+        ValidationFieldErrorType.required,
       );
     });
   });
@@ -46,9 +52,12 @@ void main() {
       );
 
       expect(result, isA<Failure<void>>());
+      final failure = (result as Failure<void>).failure;
+
+      expect(failure.type, AppFailureType.validation);
       expect(
-        (result as Failure<void>).failure.type,
-        AppFailureType.currentPasswordRequired,
+        failure.fieldError(AuthFailureField.currentPassword)?.type,
+        ValidationFieldErrorType.required,
       );
     });
   });

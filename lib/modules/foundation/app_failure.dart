@@ -1,102 +1,114 @@
 /// 여러 module과 feature가 함께 사용할 수 있는 최소 실패 타입.
 enum AppFailureType {
-  userNotFound,
-  wrongPassword,
-  emailAlreadyInUse,
-  weakPassword,
-  invalidEmail,
-  invalidPassword,
-  passwordMismatch,
-  currentPasswordRequired,
-  newPasswordRequired,
-  confirmPasswordRequired,
-  samePassword,
+  validation,
+  invalidCredentials,
+  unauthorized,
+  permissionDenied,
+  notFound,
+  conflict,
+  rateLimited,
   network,
+  unavailable,
   unknown,
+}
+
+/// validation failure가 필드 단위로 노출할 수 있는 최소 의미 타입.
+enum ValidationFieldErrorType {
+  required,
+  invalid,
+  mismatch,
+  tooWeak,
+  sameValue,
+}
+
+/// validation field error 하나를 표현하는 얇은 공통 계약.
+class ValidationFieldError {
+  const ValidationFieldError._(this.type);
+
+  final ValidationFieldErrorType type;
+
+  static const ValidationFieldError required = ValidationFieldError._(
+    ValidationFieldErrorType.required,
+  );
+
+  static const ValidationFieldError invalid = ValidationFieldError._(
+    ValidationFieldErrorType.invalid,
+  );
+
+  static const ValidationFieldError mismatch = ValidationFieldError._(
+    ValidationFieldErrorType.mismatch,
+  );
+
+  static const ValidationFieldError tooWeak = ValidationFieldError._(
+    ValidationFieldErrorType.tooWeak,
+  );
+
+  static const ValidationFieldError sameValue = ValidationFieldError._(
+    ValidationFieldErrorType.sameValue,
+  );
 }
 
 /// modules/features가 함께 기대는 얇은 공통 기반 AppFailure 모델.
 class AppFailure {
-  const AppFailure({required this.type, this.code});
+  const AppFailure._({
+    required this.type,
+    this.fieldErrors = const <String, ValidationFieldError>{},
+  });
+
+  const AppFailure.validation({
+    required Map<String, ValidationFieldError> fieldErrors,
+  }) : this._(type: AppFailureType.validation, fieldErrors: fieldErrors);
 
   final AppFailureType type;
-  final String? code;
+  final Map<String, ValidationFieldError> fieldErrors;
 
-  /// 사용자를 찾을 수 없음.
-  static const AppFailure userNotFound = AppFailure(
-    type: AppFailureType.userNotFound,
-    code: 'user-not-found',
+  bool get hasFieldErrors => fieldErrors.isNotEmpty;
+
+  ValidationFieldError? fieldError(String field) {
+    return fieldErrors[field];
+  }
+
+  AppFailure? fieldFailure(String field) {
+    final fieldError = fieldErrors[field];
+
+    if (fieldError == null) {
+      return null;
+    }
+
+    return AppFailure.validation(
+      fieldErrors: <String, ValidationFieldError>{field: fieldError},
+    );
+  }
+
+  static const AppFailure invalidCredentials = AppFailure._(
+    type: AppFailureType.invalidCredentials,
   );
 
-  /// 비밀번호 불일치.
-  static const AppFailure wrongPassword = AppFailure(
-    type: AppFailureType.wrongPassword,
-    code: 'wrong-password',
+  static const AppFailure unauthorized = AppFailure._(
+    type: AppFailureType.unauthorized,
   );
 
-  /// 이미 사용 중인 이메일.
-  static const AppFailure emailAlreadyInUse = AppFailure(
-    type: AppFailureType.emailAlreadyInUse,
-    code: 'email-already-in-use',
+  static const AppFailure permissionDenied = AppFailure._(
+    type: AppFailureType.permissionDenied,
   );
 
-  /// 약한 비밀번호.
-  static const AppFailure weakPassword = AppFailure(
-    type: AppFailureType.weakPassword,
-    code: 'weak-password',
+  static const AppFailure notFound = AppFailure._(
+    type: AppFailureType.notFound,
   );
 
-  /// 이메일 형식 오류.
-  static const AppFailure invalidEmail = AppFailure(
-    type: AppFailureType.invalidEmail,
-    code: 'invalid-email',
+  static const AppFailure conflict = AppFailure._(
+    type: AppFailureType.conflict,
   );
 
-  /// 비밀번호 validation 오류.
-  static const AppFailure invalidPassword = AppFailure(
-    type: AppFailureType.invalidPassword,
-    code: 'invalid-password',
+  static const AppFailure rateLimited = AppFailure._(
+    type: AppFailureType.rateLimited,
   );
 
-  /// 비밀번호 확인 불일치.
-  static const AppFailure passwordMismatch = AppFailure(
-    type: AppFailureType.passwordMismatch,
-    code: 'password-mismatch',
+  static const AppFailure network = AppFailure._(type: AppFailureType.network);
+
+  static const AppFailure unavailable = AppFailure._(
+    type: AppFailureType.unavailable,
   );
 
-  /// 현재 비밀번호 미입력.
-  static const AppFailure currentPasswordRequired = AppFailure(
-    type: AppFailureType.currentPasswordRequired,
-    code: 'current-password-required',
-  );
-
-  /// 새 비밀번호 미입력.
-  static const AppFailure newPasswordRequired = AppFailure(
-    type: AppFailureType.newPasswordRequired,
-    code: 'new-password-required',
-  );
-
-  /// 새 비밀번호 확인 미입력.
-  static const AppFailure confirmPasswordRequired = AppFailure(
-    type: AppFailureType.confirmPasswordRequired,
-    code: 'confirm-password-required',
-  );
-
-  /// 현재 비밀번호와 동일한 새 비밀번호.
-  static const AppFailure samePassword = AppFailure(
-    type: AppFailureType.samePassword,
-    code: 'same-password',
-  );
-
-  /// 네트워크 문제.
-  static const AppFailure network = AppFailure(
-    type: AppFailureType.network,
-    code: 'network',
-  );
-
-  /// 일반 실패.
-  static const AppFailure unknown = AppFailure(
-    type: AppFailureType.unknown,
-    code: 'unknown',
-  );
+  static const AppFailure unknown = AppFailure._(type: AppFailureType.unknown);
 }

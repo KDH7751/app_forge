@@ -7,14 +7,14 @@ import '../lib/modules/auth/auth.dart';
 
 void main() {
   test(
-    'changePassword controller maps wrongPassword failure to current field',
+    'changePassword controller maps invalidCredentials failure to current field',
     () async {
       final container = ProviderContainer(
         overrides: <Override>[
           authFacadeProvider.overrideWithValue(
             _ControllerFakeAuthFacade(
               changePasswordResult: const Result<void>.failure(
-                AppFailure.wrongPassword,
+                AppFailure.invalidCredentials,
               ),
             ),
           ),
@@ -35,7 +35,7 @@ void main() {
       expect(result, isA<Failure<void>>());
       expect(
         state.currentPasswordFailure?.type,
-        AppFailureType.wrongPassword,
+        AppFailureType.invalidCredentials,
       );
       expect(state.newPasswordFailure, isNull);
       expect(state.confirmNewPasswordFailure, isNull);
@@ -74,6 +74,49 @@ void main() {
       expect(state.newPasswordFailure, isNull);
       expect(state.confirmNewPasswordFailure, isNull);
       expect(state.isSuccess, isTrue);
+    },
+  );
+
+  test(
+    'changePassword controller maps validation fieldErrors to new password field',
+    () async {
+      final container = ProviderContainer(
+        overrides: <Override>[
+          authFacadeProvider.overrideWithValue(
+            _ControllerFakeAuthFacade(
+              changePasswordResult: const Result<void>.failure(
+                AppFailure.validation(
+                  fieldErrors: <String, ValidationFieldError>{
+                    AuthFailureField.newPassword: ValidationFieldError.tooWeak,
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final controller = container.read(
+        changePasswordControllerProvider.notifier,
+      );
+      controller.updateCurrentPassword('password123');
+      controller.updateNewPassword('short');
+      controller.updateConfirmNewPassword('short');
+
+      final result = await controller.submit();
+      final state = container.read(changePasswordControllerProvider);
+
+      expect(result, isA<Failure<void>>());
+      expect(state.currentPasswordFailure, isNull);
+      expect(state.newPasswordFailure?.type, AppFailureType.validation);
+      expect(
+        state.newPasswordFailure
+            ?.fieldError(AuthFailureField.newPassword)
+            ?.type,
+        ValidationFieldErrorType.tooWeak,
+      );
+      expect(state.confirmNewPasswordFailure, isNull);
     },
   );
 }

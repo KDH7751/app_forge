@@ -868,7 +868,7 @@ void main() {
       expect(signupResult, isA<Failure<void>>());
       expect(
         (signupResult as Failure<void>).failure.type,
-        AppFailureType.emailAlreadyInUse,
+        AppFailureType.conflict,
       );
     },
   );
@@ -1166,7 +1166,7 @@ class _FakeAuthRepository implements AuthFacade {
     required String password,
   }) async {
     if (_persistedAuthEmails.contains(email)) {
-      return const Result<void>.failure(AppFailure.emailAlreadyInUse);
+      return const Result<void>.failure(AppFailure.conflict);
     }
 
     _persistedAuthEmails.add(email);

@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
 
-import '../state/auth_flow_failure_report_helper.dart';
-import '../state/auth_flow_failure_mapper.dart';
 import '../state/auth_flow_notice.dart';
 import '../state/reset_controller.dart';
 
@@ -53,6 +51,9 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(resetControllerProvider);
     final controller = ref.read(resetControllerProvider.notifier);
+    final emailPresentation = AuthFailurePresenter.presentForAuthFlow(
+      state.emailFailure,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reset Password')),
@@ -73,7 +74,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     border: const OutlineInputBorder(),
-                    errorText: mapAuthFlowFailureText(state.emailFailure),
+                    errorText: emailPresentation?.message,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -88,7 +89,17 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
 
                           if (result case Failure<void>(
                             failure: final failure,
-                          ) when shouldReportAuthFlowFailure(failure)) {
+                          )) {
+                            final presentation =
+                                AuthFailurePresenter.presentForAuthFlow(
+                                  failure,
+                                );
+
+                            if (presentation?.shouldReportToRootFeedback !=
+                                true) {
+                              return;
+                            }
+
                             reportUiError(
                               context,
                               failure,

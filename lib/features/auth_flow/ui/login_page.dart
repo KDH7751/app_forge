@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
 
-import '../state/auth_flow_failure_report_helper.dart';
-import '../state/auth_flow_failure_mapper.dart';
 import '../state/auth_flow_notice.dart';
 import '../state/login_controller.dart';
 
@@ -19,6 +17,12 @@ class LoginPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(loginControllerProvider);
     final controller = ref.read(loginControllerProvider.notifier);
+    final emailPresentation = AuthFailurePresenter.presentForAuthFlow(
+      state.emailFailure,
+    );
+    final passwordPresentation = AuthFailurePresenter.presentForAuthFlow(
+      state.passwordFailure,
+    );
 
     return Scaffold(
       body: Center(
@@ -53,7 +57,7 @@ class LoginPage extends ConsumerWidget {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     border: const OutlineInputBorder(),
-                    errorText: mapAuthFlowFailureText(state.emailFailure),
+                    errorText: emailPresentation?.message,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -65,7 +69,7 @@ class LoginPage extends ConsumerWidget {
                   decoration: InputDecoration(
                     labelText: 'Password',
                     border: const OutlineInputBorder(),
-                    errorText: mapAuthFlowFailureText(state.passwordFailure),
+                    errorText: passwordPresentation?.message,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -80,7 +84,17 @@ class LoginPage extends ConsumerWidget {
 
                           if (result case Failure<void>(
                             failure: final failure,
-                          ) when shouldReportAuthFlowFailure(failure)) {
+                          )) {
+                            final presentation =
+                                AuthFailurePresenter.presentForAuthFlow(
+                                  failure,
+                                );
+
+                            if (presentation?.shouldReportToRootFeedback !=
+                                true) {
+                              return;
+                            }
+
                             reportUiError(
                               context,
                               failure,

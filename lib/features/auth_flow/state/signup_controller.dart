@@ -49,13 +49,14 @@ class SignupControllerState {
       email: email ?? this.email,
       password: password ?? this.password,
       confirmPassword: confirmPassword ?? this.confirmPassword,
-      emailFailure:
-          clearEmailFailure ? null : (emailFailure ?? this.emailFailure),
+      emailFailure: clearEmailFailure
+          ? emailFailure
+          : (emailFailure ?? this.emailFailure),
       passwordFailure: clearPasswordFailure
-          ? null
+          ? passwordFailure
           : (passwordFailure ?? this.passwordFailure),
       confirmPasswordFailure: clearConfirmPasswordFailure
-          ? null
+          ? confirmPasswordFailure
           : (confirmPasswordFailure ?? this.confirmPasswordFailure),
       isLoading: isLoading ?? this.isLoading,
     );
@@ -94,11 +95,7 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
         );
 
     if (validation case Failure<void>(failure: final failure)) {
-      state = state.copyWith(
-        emailFailure: _emailFailureFor(failure),
-        passwordFailure: _passwordFailureFor(failure),
-        confirmPasswordFailure: _confirmPasswordFailureFor(failure),
-      );
+      state = _applyFieldFailure(failure);
 
       return validation;
     }
@@ -114,8 +111,8 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
         .read(authFacadeProvider)
         .signup(email: state.email.trim(), password: state.password);
 
-    if (result case Failure<void>()) {
-      state = state.copyWith(isLoading: false);
+    if (result case Failure<void>(failure: final failure)) {
+      state = _applyFieldFailure(failure).copyWith(isLoading: false);
       return result;
     }
 
@@ -123,23 +120,39 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
     return result;
   }
 
+  SignupControllerState _applyFieldFailure(AppFailure failure) {
+    return state.copyWith(
+      emailFailure: _emailFailureFor(failure),
+      passwordFailure: _passwordFailureFor(failure),
+      confirmPasswordFailure: _confirmPasswordFailureFor(failure),
+      clearEmailFailure: true,
+      clearPasswordFailure: true,
+      clearConfirmPasswordFailure: true,
+    );
+  }
+
   AppFailure? _emailFailureFor(AppFailure failure) {
     return switch (failure.type) {
-      AppFailureType.invalidEmail => failure,
+      AppFailureType.validation => failure.fieldFailure(AuthFailureField.email),
+      AppFailureType.conflict => failure,
       _ => null,
     };
   }
 
   AppFailure? _passwordFailureFor(AppFailure failure) {
     return switch (failure.type) {
-      AppFailureType.invalidPassword => failure,
+      AppFailureType.validation => failure.fieldFailure(
+        AuthFailureField.password,
+      ),
       _ => null,
     };
   }
 
   AppFailure? _confirmPasswordFailureFor(AppFailure failure) {
     return switch (failure.type) {
-      AppFailureType.passwordMismatch => failure,
+      AppFailureType.validation => failure.fieldFailure(
+        AuthFailureField.confirmPassword,
+      ),
       _ => null,
     };
   }

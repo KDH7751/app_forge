@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../foundation/foundation.dart';
 import '../../domain/auth_logger.dart';
+import '../../domain/validation/auth_field_keys.dart';
 import '../datasources/users_document_datasource.dart';
 
 /// Firebase action 구현들이 공통으로 쓰는 user email 추출 helper.
@@ -107,13 +108,24 @@ Future<bool> cleanupDeletedAccountDocument({
 /// Firebase login 오류를 auth AppFailure로 매핑한다.
 AppFailure mapLoginFailure(FirebaseAuthException error) {
   switch (error.code) {
+    // login은 계정 존재 여부를 노출하는 흐름이 아니라 credential submit 흐름이므로,
+    // 같은 raw fact라도 reset과 달리 invalidCredentials로 닫는다.
     case 'user-not-found':
-      return AppFailure.userNotFound;
     case 'wrong-password':
-      return AppFailure.wrongPassword;
-    case 'invalid-email':
     case 'invalid-credential':
-      return AppFailure.invalidEmail;
+      return AppFailure.invalidCredentials;
+    // action failure contract의 unauthorized는 현재 login action을 완료할 수 없다는 뜻이다.
+    // Phase 3.5 session invalid public contract의 InvalidReason.disabled를 대체하지 않는다.
+    case 'user-disabled':
+      return AppFailure.unauthorized;
+    case 'invalid-email':
+      return const AppFailure.validation(
+        fieldErrors: <String, ValidationFieldError>{
+          AuthFailureField.email: ValidationFieldError.invalid,
+        },
+      );
+    case 'too-many-requests':
+      return AppFailure.rateLimited;
     case 'network-request-failed':
       return AppFailure.network;
     default:
@@ -125,11 +137,23 @@ AppFailure mapLoginFailure(FirebaseAuthException error) {
 AppFailure mapSignupFailure(FirebaseAuthException error) {
   switch (error.code) {
     case 'email-already-in-use':
-      return AppFailure.emailAlreadyInUse;
+      return AppFailure.conflict;
     case 'weak-password':
-      return AppFailure.weakPassword;
+      return const AppFailure.validation(
+        fieldErrors: <String, ValidationFieldError>{
+          AuthFailureField.password: ValidationFieldError.tooWeak,
+        },
+      );
     case 'invalid-email':
-      return AppFailure.invalidEmail;
+      return const AppFailure.validation(
+        fieldErrors: <String, ValidationFieldError>{
+          AuthFailureField.email: ValidationFieldError.invalid,
+        },
+      );
+    case 'operation-not-allowed':
+      return AppFailure.permissionDenied;
+    case 'too-many-requests':
+      return AppFailure.rateLimited;
     case 'network-request-failed':
       return AppFailure.network;
     default:
@@ -140,10 +164,18 @@ AppFailure mapSignupFailure(FirebaseAuthException error) {
 /// Firebase reset password 오류를 auth AppFailure로 매핑한다.
 AppFailure mapResetFailure(FirebaseAuthException error) {
   switch (error.code) {
+    // reset은 account existence를 확인하는 recovery 흐름이므로,
+    // 같은 raw fact라도 login과 달리 notFound로 정규화한다.
     case 'user-not-found':
-      return AppFailure.userNotFound;
+      return AppFailure.notFound;
     case 'invalid-email':
-      return AppFailure.invalidEmail;
+      return const AppFailure.validation(
+        fieldErrors: <String, ValidationFieldError>{
+          AuthFailureField.email: ValidationFieldError.invalid,
+        },
+      );
+    case 'too-many-requests':
+      return AppFailure.rateLimited;
     case 'network-request-failed':
       return AppFailure.network;
     default:
@@ -156,9 +188,19 @@ AppFailure mapChangePasswordFailure(FirebaseAuthException error) {
   switch (error.code) {
     case 'wrong-password':
     case 'invalid-credential':
-      return AppFailure.wrongPassword;
+      return AppFailure.invalidCredentials;
     case 'weak-password':
-      return AppFailure.weakPassword;
+      return const AppFailure.validation(
+        fieldErrors: <String, ValidationFieldError>{
+          AuthFailureField.newPassword: ValidationFieldError.tooWeak,
+        },
+      );
+    // 여기의 unauthorized도 action 실행 실패 의미이며,
+    // session invalid public contract의 disabled/invalid reason 축과는 별개다.
+    case 'requires-recent-login':
+      return AppFailure.unauthorized;
+    case 'too-many-requests':
+      return AppFailure.rateLimited;
     case 'network-request-failed':
       return AppFailure.network;
     default:
@@ -171,7 +213,13 @@ AppFailure mapDeleteAccountAuthFailure(FirebaseAuthException error) {
   switch (error.code) {
     case 'wrong-password':
     case 'invalid-credential':
-      return AppFailure.wrongPassword;
+      return AppFailure.invalidCredentials;
+    // 여기의 unauthorized도 action 실행 실패 의미이며,
+    // session invalid public contract의 disabled/invalid reason 축과는 별개다.
+    case 'requires-recent-login':
+      return AppFailure.unauthorized;
+    case 'too-many-requests':
+      return AppFailure.rateLimited;
     case 'network-request-failed':
       return AppFailure.network;
     default:
@@ -182,9 +230,19 @@ AppFailure mapDeleteAccountAuthFailure(FirebaseAuthException error) {
 /// Firestore users 문서 작업 오류를 auth AppFailure로 매핑한다.
 AppFailure mapFirestoreFailure(FirebaseException error) {
   switch (error.code) {
-    case 'unavailable':
+    case 'permission-denied':
+      return AppFailure.permissionDenied;
+    case 'not-found':
+      return AppFailure.notFound;
+    case 'already-exists':
+    case 'aborted':
+      return AppFailure.conflict;
+    case 'resource-exhausted':
+      return AppFailure.rateLimited;
     case 'network-request-failed':
       return AppFailure.network;
+    case 'unavailable':
+      return AppFailure.unavailable;
     default:
       return AppFailure.unknown;
   }

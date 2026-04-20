@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
 
-import '../state/auth_flow_failure_report_helper.dart';
-import '../state/auth_flow_failure_mapper.dart';
 import '../state/signup_controller.dart';
 
 /// reusable auth module을 실제 프로젝트 sign-up UX로 여는 auth_flow page.
@@ -16,6 +14,15 @@ class SignupPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(signupControllerProvider);
     final controller = ref.read(signupControllerProvider.notifier);
+    final emailPresentation = AuthFailurePresenter.presentForAuthFlow(
+      state.emailFailure,
+    );
+    final passwordPresentation = AuthFailurePresenter.presentForAuthFlow(
+      state.passwordFailure,
+    );
+    final confirmPasswordPresentation = AuthFailurePresenter.presentForAuthFlow(
+      state.confirmPasswordFailure,
+    );
 
     return Scaffold(
       appBar: AppBar(title: const Text('Sign Up')),
@@ -36,7 +43,7 @@ class SignupPage extends ConsumerWidget {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     border: const OutlineInputBorder(),
-                    errorText: mapAuthFlowFailureText(state.emailFailure),
+                    errorText: emailPresentation?.message,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -48,7 +55,7 @@ class SignupPage extends ConsumerWidget {
                   decoration: InputDecoration(
                     labelText: 'Password',
                     border: const OutlineInputBorder(),
-                    errorText: mapAuthFlowFailureText(state.passwordFailure),
+                    errorText: passwordPresentation?.message,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -59,9 +66,7 @@ class SignupPage extends ConsumerWidget {
                   decoration: InputDecoration(
                     labelText: 'Confirm password',
                     border: const OutlineInputBorder(),
-                    errorText: mapAuthFlowFailureText(
-                      state.confirmPasswordFailure,
-                    ),
+                    errorText: confirmPasswordPresentation?.message,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -76,7 +81,17 @@ class SignupPage extends ConsumerWidget {
 
                           if (result case Failure<void>(
                             failure: final failure,
-                          ) when shouldReportAuthFlowFailure(failure)) {
+                          )) {
+                            final presentation =
+                                AuthFailurePresenter.presentForAuthFlow(
+                                  failure,
+                                );
+
+                            if (presentation?.shouldReportToRootFeedback !=
+                                true) {
+                              return;
+                            }
+
                             reportUiError(
                               context,
                               failure,

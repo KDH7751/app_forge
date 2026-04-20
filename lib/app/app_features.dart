@@ -155,12 +155,12 @@ final appRouteTrees = collectFeatureRouteTrees(appFeatures);
 /// `appFeatures`를 수정했다면 이 값이 반영된 navigation 동작도 함께 검증해야 한다.
 final appRoutes = collectFeatureRoutes(appFeatures);
 
-/// root snackbar가 domain failure를 문구로 바꿀 때 순서대로 조회하는 mapper 목록.
+/// root snackbar가 feature presenter를 통해 domain failure 문구를 조회하는 목록.
 ///
 /// root ErrorHub listener는 이 배열을 순서대로 돌며 첫 메시지를 사용한다.
 /// feature별 우선순위를 바꾸고 싶다면 이 배열 순서를 조정하면 된다.
 final appFailureNotificationTextMappers = <String? Function(Object?)>[
-  mapAuthFailureText,
+  AuthFailurePresenter.messageForRootFeedback,
 ];
 
 /// app이 현재 잠금 기준으로 유지하는 auth redirect 정책.

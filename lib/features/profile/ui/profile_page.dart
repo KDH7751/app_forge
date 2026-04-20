@@ -4,7 +4,6 @@ import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
 import 'change_password_section.dart';
 import 'delete_account_section.dart';
-import 'profile_action_failure_report_helper.dart';
 
 /// drawer 노출 route 확인용 profile 페이지.
 class ProfilePage extends ConsumerWidget {
@@ -38,14 +37,18 @@ class ProfilePage extends ConsumerWidget {
                           return;
                         }
 
-                        if (result case Failure<void>(
-                          failure: final failure,
-                        ) when shouldReportProfileActionFailure(failure)) {
-                          reportUiError(
-                            context,
-                            failure,
-                            domainError: failure,
-                          );
+                        if (result case Failure<void>(failure: final failure)) {
+                          final presentation =
+                              AuthFailurePresenter.presentForProfileAction(
+                                failure,
+                              );
+
+                          if (presentation?.shouldReportToRootFeedback !=
+                              true) {
+                            return;
+                          }
+
+                          reportUiError(context, failure, domainError: failure);
                         }
                       },
                 child: state.isLoading

@@ -122,3 +122,19 @@
 - 2026-04-14: features는 modules public surface를 소비할 수 있지만 concrete 구현 세부에 직접 의존하면 안 된다.
 - 2026-04-14: runtime code inside `lib/`는 relative import를 기본으로 사용한다.
 - 2026-04-14: `lib/app/**`, `lib/modules/**`, `lib/features/**`는 `lib/engine/src/**`를 직접 import하지 않는다.
+
+## Phase 3.7 feature failure contract baseline
+
+- 2026-04-20: feature-level failure 공통 계약은 계속 `Result<T>` / `AppFailure`로 유지한다.
+- 2026-04-20: `AppFailureType`은 `validation`, `invalidCredentials`, `unauthorized`, `permissionDenied`, `notFound`, `conflict`, `rateLimited`, `network`, `unavailable`, `unknown`만 사용한다.
+- 2026-04-20: `AppFailureType` 이름은 provider나 backend 구현을 직접 암시하지 않는다.
+- 2026-04-20: `AppFailure` public contract는 `type`과 validation용 `fieldErrors`만 가진다.
+- 2026-04-20: validation failure는 별도 예외 계약으로 빼지 않고 `AppFailureType.validation + fieldErrors` 구조로 수렴한다.
+- 2026-04-20: raw provider code, provider exception class, backend status, provider 원문 메시지는 repository/data boundary에서만 해석하고 state/UI까지 직접 올리지 않는다.
+- 2026-04-20: controller는 정규화된 `AppFailure`만 소비한다.
+- 2026-04-20: UI는 `AppFailure` 공용 의미만 기준으로 상태와 문구를 결정한다.
+- 2026-04-20: feature-level failure 소비 기본 패턴은 feature별 failure presenter로 유지하고, 문구 변환과 로컬 처리/공용 피드백 후보 판단은 presenter로 응집한다.
+- 2026-04-20: auth는 첫 적용 대상이지만 `AppFailure` 모델과 타입 집합은 auth 전용으로 잠그지 않는다.
+- 2026-04-20: auth action failure contract의 `unauthorized`와 Phase 3.5 session invalid public contract의 `InvalidReason.disabled`는 같은 raw provider 사실과 닿아도 서로 다른 계약으로 유지한다.
+- 2026-04-20: 같은 raw provider code라도 action context가 다르면 서로 다른 `AppFailureType`으로 정규화될 수 있으며, `user-not-found`는 login에서 `invalidCredentials`, reset에서 `notFound`로 유지한다.
+- 2026-04-20: global/runtime error 축(`ErrorHub`, `ErrorPolicy`, `ErrorDecision`)은 이번 단계에서 변경하지 않는다.

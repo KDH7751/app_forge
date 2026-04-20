@@ -38,10 +38,11 @@ class LoginControllerState {
     return LoginControllerState(
       email: email ?? this.email,
       password: password ?? this.password,
-      emailFailure:
-          clearEmailFailure ? null : (emailFailure ?? this.emailFailure),
+      emailFailure: clearEmailFailure
+          ? emailFailure
+          : (emailFailure ?? this.emailFailure),
       passwordFailure: clearPasswordFailure
-          ? null
+          ? passwordFailure
           : (passwordFailure ?? this.passwordFailure),
       isLoading: isLoading ?? this.isLoading,
     );
@@ -69,10 +70,7 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
         .validateLogin(email: state.email, password: state.password);
 
     if (validation case Failure<void>(failure: final failure)) {
-      state = state.copyWith(
-        emailFailure: _emailFailureFor(failure),
-        passwordFailure: _passwordFailureFor(failure),
-      );
+      state = _applyFieldFailure(failure);
 
       return validation;
     }
@@ -87,8 +85,8 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
         .read(authFacadeProvider)
         .login(email: state.email.trim(), password: state.password);
 
-    if (result case Failure<void>()) {
-      state = state.copyWith(isLoading: false);
+    if (result case Failure<void>(failure: final failure)) {
+      state = _applyFieldFailure(failure).copyWith(isLoading: false);
       return result;
     }
 
@@ -96,16 +94,29 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
     return result;
   }
 
+  LoginControllerState _applyFieldFailure(AppFailure failure) {
+    return state.copyWith(
+      emailFailure: _emailFailureFor(failure),
+      passwordFailure: _passwordFailureFor(failure),
+      clearEmailFailure: true,
+      clearPasswordFailure: true,
+    );
+  }
+
   AppFailure? _emailFailureFor(AppFailure failure) {
-    return switch (failure.type) {
-      AppFailureType.invalidEmail => failure,
-      _ => null,
-    };
+    if (failure.type == AppFailureType.validation) {
+      return failure.fieldFailure(AuthFailureField.email);
+    }
+
+    return null;
   }
 
   AppFailure? _passwordFailureFor(AppFailure failure) {
     return switch (failure.type) {
-      AppFailureType.invalidPassword => failure,
+      AppFailureType.validation => failure.fieldFailure(
+        AuthFailureField.password,
+      ),
+      AppFailureType.invalidCredentials => failure,
       _ => null,
     };
   }

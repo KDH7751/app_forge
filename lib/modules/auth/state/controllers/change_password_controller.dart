@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/change_password_input.dart';
+import '../../domain/validation/auth_field_keys.dart';
 import '../../../foundation/foundation.dart';
 import '../providers/auth_facade_provider.dart';
 
@@ -61,13 +62,13 @@ class ChangePasswordControllerState {
       newPassword: newPassword ?? this.newPassword,
       confirmNewPassword: confirmNewPassword ?? this.confirmNewPassword,
       currentPasswordFailure: clearCurrentPasswordFailure
-          ? null
+          ? currentPasswordFailure
           : (currentPasswordFailure ?? this.currentPasswordFailure),
       newPasswordFailure: clearNewPasswordFailure
-          ? null
+          ? newPasswordFailure
           : (newPasswordFailure ?? this.newPasswordFailure),
       confirmNewPasswordFailure: clearConfirmNewPasswordFailure
-          ? null
+          ? confirmNewPasswordFailure
           : (confirmNewPasswordFailure ?? this.confirmNewPasswordFailure),
       isLoading: isLoading ?? this.isLoading,
       isSuccess: isSuccess ?? this.isSuccess,
@@ -160,31 +161,36 @@ class ChangePasswordController
       currentPasswordFailure: _currentPasswordFailureFor(failure),
       newPasswordFailure: _newPasswordFailureFor(failure),
       confirmNewPasswordFailure: _confirmPasswordFailureFor(failure),
+      clearCurrentPasswordFailure: true,
+      clearNewPasswordFailure: true,
+      clearConfirmNewPasswordFailure: true,
     );
   }
 
   AppFailure? _currentPasswordFailureFor(AppFailure failure) {
     return switch (failure.type) {
-      AppFailureType.currentPasswordRequired => failure,
-      AppFailureType.wrongPassword => failure,
+      AppFailureType.validation => failure.fieldFailure(
+        AuthFailureField.currentPassword,
+      ),
+      AppFailureType.invalidCredentials => failure,
       _ => null,
     };
   }
 
   AppFailure? _newPasswordFailureFor(AppFailure failure) {
     return switch (failure.type) {
-      AppFailureType.newPasswordRequired => failure,
-      AppFailureType.invalidPassword => failure,
-      AppFailureType.weakPassword => failure,
-      AppFailureType.samePassword => failure,
+      AppFailureType.validation => failure.fieldFailure(
+        AuthFailureField.newPassword,
+      ),
       _ => null,
     };
   }
 
   AppFailure? _confirmPasswordFailureFor(AppFailure failure) {
     return switch (failure.type) {
-      AppFailureType.confirmPasswordRequired => failure,
-      AppFailureType.passwordMismatch => failure,
+      AppFailureType.validation => failure.fieldFailure(
+        AuthFailureField.confirmNewPassword,
+      ),
       _ => null,
     };
   }

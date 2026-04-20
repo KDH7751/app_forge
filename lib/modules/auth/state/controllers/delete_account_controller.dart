@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/delete_account_input.dart';
+import '../../domain/validation/auth_field_keys.dart';
 import '../../../foundation/foundation.dart';
 import '../providers/auth_facade_provider.dart';
 
@@ -38,7 +39,7 @@ class DeleteAccountControllerState {
     return DeleteAccountControllerState(
       currentPassword: currentPassword ?? this.currentPassword,
       currentPasswordFailure: clearCurrentPasswordFailure
-          ? null
+          ? currentPasswordFailure
           : (currentPasswordFailure ?? this.currentPasswordFailure),
       isLoading: isLoading ?? this.isLoading,
     );
@@ -69,6 +70,7 @@ class DeleteAccountController
     if (validation case Failure<void>(failure: final failure)) {
       state = state.copyWith(
         currentPasswordFailure: _currentPasswordFailureFor(failure),
+        clearCurrentPasswordFailure: true,
       );
 
       return validation;
@@ -82,6 +84,7 @@ class DeleteAccountController
       state = state.copyWith(
         isLoading: false,
         currentPasswordFailure: _currentPasswordFailureFor(failure),
+        clearCurrentPasswordFailure: true,
       );
 
       return result;
@@ -94,8 +97,10 @@ class DeleteAccountController
 
   AppFailure? _currentPasswordFailureFor(AppFailure failure) {
     return switch (failure.type) {
-      AppFailureType.currentPasswordRequired => failure,
-      AppFailureType.wrongPassword => failure,
+      AppFailureType.validation => failure.fieldFailure(
+        AuthFailureField.currentPassword,
+      ),
+      AppFailureType.invalidCredentials => failure,
       _ => null,
     };
   }

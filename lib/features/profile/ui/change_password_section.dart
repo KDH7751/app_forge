@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
-import 'profile_action_failure_report_helper.dart';
 
 /// profile route에서 auth changePassword action을 소비하는 임시 UI 섹션.
 class ChangePasswordSection extends ConsumerStatefulWidget {
@@ -77,6 +76,16 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
   Widget build(BuildContext context) {
     final state = ref.watch(changePasswordControllerProvider);
     final controller = ref.read(changePasswordControllerProvider.notifier);
+    final currentPasswordPresentation =
+        AuthFailurePresenter.presentForProfileAction(
+          state.currentPasswordFailure,
+        );
+    final newPasswordPresentation =
+        AuthFailurePresenter.presentForProfileAction(state.newPasswordFailure);
+    final confirmPasswordPresentation =
+        AuthFailurePresenter.presentForProfileAction(
+          state.confirmNewPasswordFailure,
+        );
 
     return Card(
       child: Padding(
@@ -100,9 +109,7 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
               decoration: InputDecoration(
                 labelText: 'Current password',
                 border: const OutlineInputBorder(),
-                errorText: mapChangePasswordFailureText(
-                  state.currentPasswordFailure,
-                ),
+                errorText: currentPasswordPresentation?.message,
               ),
             ),
             const SizedBox(height: 12),
@@ -115,9 +122,7 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
               decoration: InputDecoration(
                 labelText: 'New password',
                 border: const OutlineInputBorder(),
-                errorText: mapChangePasswordFailureText(
-                  state.newPasswordFailure,
-                ),
+                errorText: newPasswordPresentation?.message,
               ),
             ),
             const SizedBox(height: 12),
@@ -129,9 +134,7 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
               decoration: InputDecoration(
                 labelText: 'Confirm new password',
                 border: const OutlineInputBorder(),
-                errorText: mapChangePasswordFailureText(
-                  state.confirmNewPasswordFailure,
-                ),
+                errorText: confirmPasswordPresentation?.message,
               ),
             ),
             const SizedBox(height: 16),
@@ -144,14 +147,17 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
                         return;
                       }
 
-                      if (result case Failure<void>(
-                        failure: final failure,
-                      ) when shouldReportProfileActionFailure(failure)) {
-                        reportUiError(
-                          context,
-                          failure,
-                          domainError: failure,
-                        );
+                      if (result case Failure<void>(failure: final failure)) {
+                        final presentation =
+                            AuthFailurePresenter.presentForProfileAction(
+                              failure,
+                            );
+
+                        if (presentation?.shouldReportToRootFeedback != true) {
+                          return;
+                        }
+
+                        reportUiError(context, failure, domainError: failure);
                       }
                     }
                   : null,
