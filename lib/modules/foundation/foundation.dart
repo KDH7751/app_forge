@@ -10,5 +10,5 @@
 /// - module-local concrete 구현이나 project-specific policy는 노출하지 않는다.
 /// ===================================================================
 
-export 'app_error.dart';
+export 'app_failure.dart';
 export 'result.dart';

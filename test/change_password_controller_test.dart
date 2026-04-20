@@ -14,7 +14,7 @@ void main() {
           authFacadeProvider.overrideWithValue(
             _ControllerFakeAuthFacade(
               changePasswordResult: const Result<void>.failure(
-                AppError.wrongPassword,
+                AppFailure.wrongPassword,
               ),
             ),
           ),
@@ -33,9 +33,12 @@ void main() {
       final state = container.read(changePasswordControllerProvider);
 
       expect(result, isA<Failure<void>>());
-      expect(state.currentPasswordError?.type, AppErrorType.wrongPassword);
-      expect(state.newPasswordError, isNull);
-      expect(state.confirmNewPasswordError, isNull);
+      expect(
+        state.currentPasswordFailure?.type,
+        AppFailureType.wrongPassword,
+      );
+      expect(state.newPasswordFailure, isNull);
+      expect(state.confirmNewPasswordFailure, isNull);
     },
   );
 
@@ -67,9 +70,9 @@ void main() {
       expect(state.currentPassword, isEmpty);
       expect(state.newPassword, isEmpty);
       expect(state.confirmNewPassword, isEmpty);
-      expect(state.currentPasswordError, isNull);
-      expect(state.newPasswordError, isNull);
-      expect(state.confirmNewPasswordError, isNull);
+      expect(state.currentPasswordFailure, isNull);
+      expect(state.newPasswordFailure, isNull);
+      expect(state.confirmNewPasswordFailure, isNull);
       expect(state.isSuccess, isTrue);
     },
   );

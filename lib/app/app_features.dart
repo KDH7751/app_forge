@@ -155,12 +155,12 @@ final appRouteTrees = collectFeatureRouteTrees(appFeatures);
 /// `appFeatures`를 수정했다면 이 값이 반영된 navigation 동작도 함께 검증해야 한다.
 final appRoutes = collectFeatureRoutes(appFeatures);
 
-/// root snackbar가 domain error를 문구로 바꿀 때 순서대로 조회하는 mapper 목록.
+/// root snackbar가 domain failure를 문구로 바꿀 때 순서대로 조회하는 mapper 목록.
 ///
 /// root ErrorHub listener는 이 배열을 순서대로 돌며 첫 메시지를 사용한다.
 /// feature별 우선순위를 바꾸고 싶다면 이 배열 순서를 조정하면 된다.
-final appErrorNotificationTextMappers = <String? Function(Object?)>[
-  mapAuthErrorText,
+final appFailureNotificationTextMappers = <String? Function(Object?)>[
+  mapAuthFailureText,
 ];
 
 /// app이 현재 잠금 기준으로 유지하는 auth redirect 정책.
@@ -201,11 +201,11 @@ String? resolveAppRedirect({
 /// 전역 에러 알림에 사용할 문자열을 결정한다.
 ///
 /// root ErrorHub listener는 이 함수의 반환값만 사용하므로,
-/// 특정 feature 에러가 전역 알림으로 어떻게 보이는지는 여기서 닫힌다.
+/// 특정 feature failure가 전역 알림으로 어떻게 보이는지는 여기서 닫힌다.
 /// 개별 mapper 구현을 바꾸기보다, 먼저 어떤 feature mapper를 이 목록에 넣을지 확인하는 편이 맞다.
-String? mapAppErrorNotificationText(Object? domainError) {
-  for (final mapper in appErrorNotificationTextMappers) {
-    final message = mapper(domainError);
+String? mapAppFailureNotificationText(Object? domainFailure) {
+  for (final mapper in appFailureNotificationTextMappers) {
+    final message = mapper(domainFailure);
 
     if (message != null) {
       return message;

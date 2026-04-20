@@ -7,19 +7,19 @@
 
 ## 1. Feature failure
 
-feature 내부 비동기 실패와 validation 실패는 `Result<T>`와 `AppError`를 사용해 처리한다.
+feature 내부 비동기 실패와 validation 실패는 `Result<T>`와 `AppFailure`를 사용해 처리한다.
 
 기본 규칙:
 
 - feature 외부로 노출되는 비동기 API는 `Result<T>`를 반환한다.
-- 외부 예외는 data layer나 repository layer를 벗어나기 전에 `AppError`로 매핑한다.
-- feature UI는 raw exception이 아니라 `AppError`를 처리한다.
+- 외부 예외는 data layer나 repository layer를 벗어나기 전에 `AppFailure`로 매핑한다.
+- feature UI는 raw exception이 아니라 `AppFailure`를 처리한다.
 
 원칙:
 
 - raw `FirebaseException` 같은 외부 예외를 그대로 노출하지 않는다.
 - 파싱/전송/권한 오류를 UI까지 throw로 전달하지 않는다.
-- UI는 실패 원인 문자열보다 `AppError` 계약을 기준으로 동작한다.
+- UI는 실패 원인 문자열보다 `AppFailure` 계약을 기준으로 동작한다.
 
 ## 2. Global/runtime error
 
@@ -62,7 +62,7 @@ UI 규칙:
 
 ## 3. 두 축의 경계
 
-- `AppError`는 feature-level failure 표현이다.
+- `AppFailure`는 feature-level failure 표현이다.
 - `ErrorEnvelope` / `ErrorDecision`은 app 전역/runtime error 처리 모델이다.
 - `domainError`는 optional metadata일 뿐, 두 축을 하나의 모델로 합치지 않는다.
-- `AppError`를 global error model로 승격하지 않는다.
+- `AppFailure`를 global error model로 승격하지 않는다.

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
-import 'profile_action_error_report_helper.dart';
+import 'profile_action_failure_report_helper.dart';
 
 /// profile route에서 auth changePassword action을 소비하는 임시 UI 섹션.
 class ChangePasswordSection extends ConsumerStatefulWidget {
@@ -100,8 +100,8 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
               decoration: InputDecoration(
                 labelText: 'Current password',
                 border: const OutlineInputBorder(),
-                errorText: mapChangePasswordErrorText(
-                  state.currentPasswordError,
+                errorText: mapChangePasswordFailureText(
+                  state.currentPasswordFailure,
                 ),
               ),
             ),
@@ -115,7 +115,9 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
               decoration: InputDecoration(
                 labelText: 'New password',
                 border: const OutlineInputBorder(),
-                errorText: mapChangePasswordErrorText(state.newPasswordError),
+                errorText: mapChangePasswordFailureText(
+                  state.newPasswordFailure,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -127,8 +129,8 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
               decoration: InputDecoration(
                 labelText: 'Confirm new password',
                 border: const OutlineInputBorder(),
-                errorText: mapChangePasswordErrorText(
-                  state.confirmNewPasswordError,
+                errorText: mapChangePasswordFailureText(
+                  state.confirmNewPasswordFailure,
                 ),
               ),
             ),
@@ -143,9 +145,13 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
                       }
 
                       if (result case Failure<void>(
-                        error: final error,
-                      ) when shouldReportProfileActionError(error)) {
-                        reportUiError(context, error, domainError: error);
+                        failure: final failure,
+                      ) when shouldReportProfileActionFailure(failure)) {
+                        reportUiError(
+                          context,
+                          failure,
+                          domainError: failure,
+                        );
                       }
                     }
                   : null,

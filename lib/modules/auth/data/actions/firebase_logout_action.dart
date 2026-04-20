@@ -27,7 +27,7 @@ class FirebaseLogoutAction implements LogoutAction {
     } on FirebaseAuthException catch (error, stackTrace) {
       _logger.error('auth.logout.failed', error: error, stackTrace: stackTrace);
 
-      return const Result<void>.failure(AppError.unknown);
+      return const Result<void>.failure(AppFailure.unknown);
     } catch (error, stackTrace) {
       _logger.error(
         'auth.logout.failed.unknown',
@@ -35,7 +35,7 @@ class FirebaseLogoutAction implements LogoutAction {
         stackTrace: stackTrace,
       );
 
-      return const Result<void>.failure(AppError.unknown);
+      return const Result<void>.failure(AppFailure.unknown);
     }
   }
 }

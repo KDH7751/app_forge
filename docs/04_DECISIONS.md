@@ -41,7 +41,7 @@
 - 2026-04-03: `domainError`는 optional metadata로만 전달되고 ErrorPolicy는 이를 타입/의미 수준에서 해석하지 않는다.
 - 2026-04-03: UI는 `ErrorDecision.shouldNotify`만 기준으로 반응하고, 전역 에러 UI는 root 단일 listener에서 처리한다.
 - 2026-04-03: 앱은 runZonedGuarded 기반 단일 zone에서 실행하고 `main.dart`는 runtime entry만 담당한다.
-- 2026-04-03: `AppError`는 feature failure contract로 유지하고 global error model로 승격하지 않는다.
+- 2026-04-03: `AppFailure`는 feature failure contract로 유지하고 global error model로 승격하지 않는다.
 
 ## Phase 3.3 post-login account actions
 
@@ -114,7 +114,7 @@
 - 2026-04-14: `modules`는 reusable base module이고 project-specific UI/flow 소비 로직은 가지지 않는다.
 - 2026-04-14: `features`는 project-specific flow, UX, entry, product slice를 가진다.
 - 2026-04-14: `features/common`은 project-level shared asset 위치이며 reusable module이나 misc/shared 창고로 사용하지 않는다.
-- 2026-04-14: `modules/foundation`은 engine이 아닌 공통 기반 타입/계약 위치이며 `AppError`, `Result`를 둔다.
+- 2026-04-14: `modules/foundation`은 engine이 아닌 공통 기반 타입/계약 위치이며 `AppFailure`, `Result`를 둔다.
 - 2026-04-14: auth 밖 공통 성격은 `modules/foundation`으로 올리고 auth 내부에는 auth-local 이름만 남긴다.
 - 2026-04-14: `auth_flow`는 auth module public surface를 소비하는 project-level auth consumer feature로 유지한다.
 - 2026-04-14: `bootstrap`은 reusable startup/composition module로 유지하고 redirect policy 소유권은 app layer에 남긴다.

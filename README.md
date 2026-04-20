@@ -18,7 +18,7 @@
 - auth 기능 (`login / signup / logout / reset / changePassword / deleteAccount`)
 - AuthSession public contract (`Authenticated / Unauthenticated / Invalid / Pending`)
 - app layer auth redirect와 Session Integrity
-- Result<T> / AppError 기반 feature failure 처리
+- Result<T> / AppFailure 기반 feature failure 처리
 - ErrorHub / ErrorPolicy / ErrorDecision 기반 전역 에러 처리
 - runZonedGuarded 기반 runtime bootstrap
 

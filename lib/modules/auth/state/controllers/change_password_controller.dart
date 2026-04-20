@@ -6,7 +6,7 @@ import '../providers/auth_facade_provider.dart';
 
 /// profile 소비 UI가 auth changePassword 실행을 여는 단일 진입 controller.
 ///
-/// 이 controller는 form 상태와 field error만 관리하고,
+/// 이 controller는 form 상태와 field failure만 관리하고,
 /// 실제 실행과 validation은 auth facade로 위임한다.
 /// 성공 처리 방식이 바뀌면 profile 섹션과 관련 테스트가 함께 영향을 받는다.
 final changePasswordControllerProvider =
@@ -21,9 +21,9 @@ class ChangePasswordControllerState {
     this.currentPassword = '',
     this.newPassword = '',
     this.confirmNewPassword = '',
-    this.currentPasswordError,
-    this.newPasswordError,
-    this.confirmNewPasswordError,
+    this.currentPasswordFailure,
+    this.newPasswordFailure,
+    this.confirmNewPasswordFailure,
     this.isLoading = false,
     this.isSuccess = false,
   });
@@ -31,9 +31,9 @@ class ChangePasswordControllerState {
   final String currentPassword;
   final String newPassword;
   final String confirmNewPassword;
-  final AppError? currentPasswordError;
-  final AppError? newPasswordError;
-  final AppError? confirmNewPasswordError;
+  final AppFailure? currentPasswordFailure;
+  final AppFailure? newPasswordFailure;
+  final AppFailure? confirmNewPasswordFailure;
   final bool isLoading;
   final bool isSuccess;
 
@@ -47,28 +47,28 @@ class ChangePasswordControllerState {
     String? currentPassword,
     String? newPassword,
     String? confirmNewPassword,
-    AppError? currentPasswordError,
-    AppError? newPasswordError,
-    AppError? confirmNewPasswordError,
+    AppFailure? currentPasswordFailure,
+    AppFailure? newPasswordFailure,
+    AppFailure? confirmNewPasswordFailure,
     bool? isLoading,
     bool? isSuccess,
-    bool clearCurrentPasswordError = false,
-    bool clearNewPasswordError = false,
-    bool clearConfirmNewPasswordError = false,
+    bool clearCurrentPasswordFailure = false,
+    bool clearNewPasswordFailure = false,
+    bool clearConfirmNewPasswordFailure = false,
   }) {
     return ChangePasswordControllerState(
       currentPassword: currentPassword ?? this.currentPassword,
       newPassword: newPassword ?? this.newPassword,
       confirmNewPassword: confirmNewPassword ?? this.confirmNewPassword,
-      currentPasswordError: clearCurrentPasswordError
+      currentPasswordFailure: clearCurrentPasswordFailure
           ? null
-          : (currentPasswordError ?? this.currentPasswordError),
-      newPasswordError: clearNewPasswordError
+          : (currentPasswordFailure ?? this.currentPasswordFailure),
+      newPasswordFailure: clearNewPasswordFailure
           ? null
-          : (newPasswordError ?? this.newPasswordError),
-      confirmNewPasswordError: clearConfirmNewPasswordError
+          : (newPasswordFailure ?? this.newPasswordFailure),
+      confirmNewPasswordFailure: clearConfirmNewPasswordFailure
           ? null
-          : (confirmNewPasswordError ?? this.confirmNewPasswordError),
+          : (confirmNewPasswordFailure ?? this.confirmNewPasswordFailure),
       isLoading: isLoading ?? this.isLoading,
       isSuccess: isSuccess ?? this.isSuccess,
     );
@@ -87,7 +87,7 @@ class ChangePasswordController
     state = state.copyWith(
       currentPassword: value,
       isSuccess: false,
-      clearCurrentPasswordError: true,
+      clearCurrentPasswordFailure: true,
     );
   }
 
@@ -95,7 +95,7 @@ class ChangePasswordController
     state = state.copyWith(
       newPassword: value,
       isSuccess: false,
-      clearNewPasswordError: true,
+      clearNewPasswordFailure: true,
     );
   }
 
@@ -103,7 +103,7 @@ class ChangePasswordController
     state = state.copyWith(
       confirmNewPassword: value,
       isSuccess: false,
-      clearConfirmNewPasswordError: true,
+      clearConfirmNewPasswordFailure: true,
     );
   }
 
@@ -117,8 +117,8 @@ class ChangePasswordController
         .read(authFacadeProvider)
         .validateChangePassword(input);
 
-    if (validation case Failure<void>(error: final error)) {
-      state = _applyFieldError(error);
+    if (validation case Failure<void>(failure: final failure)) {
+      state = _applyFieldFailure(failure);
 
       return validation;
     }
@@ -126,16 +126,16 @@ class ChangePasswordController
     state = state.copyWith(
       isLoading: true,
       isSuccess: false,
-      clearCurrentPasswordError: true,
-      clearNewPasswordError: true,
-      clearConfirmNewPasswordError: true,
+      clearCurrentPasswordFailure: true,
+      clearNewPasswordFailure: true,
+      clearConfirmNewPasswordFailure: true,
     );
 
     final result = await ref.read(authFacadeProvider).changePassword(input);
 
-    if (result case Failure<void>(error: final error)) {
-      state = _applyFieldError(
-        error,
+    if (result case Failure<void>(failure: final failure)) {
+      state = _applyFieldFailure(
+        failure,
       ).copyWith(isLoading: false, isSuccess: false);
 
       return result;
@@ -147,44 +147,44 @@ class ChangePasswordController
       confirmNewPassword: '',
       isLoading: false,
       isSuccess: true,
-      clearCurrentPasswordError: true,
-      clearNewPasswordError: true,
-      clearConfirmNewPasswordError: true,
+      clearCurrentPasswordFailure: true,
+      clearNewPasswordFailure: true,
+      clearConfirmNewPasswordFailure: true,
     );
 
     return result;
   }
 
-  ChangePasswordControllerState _applyFieldError(AppError error) {
+  ChangePasswordControllerState _applyFieldFailure(AppFailure failure) {
     return state.copyWith(
-      currentPasswordError: _currentPasswordErrorFor(error),
-      newPasswordError: _newPasswordErrorFor(error),
-      confirmNewPasswordError: _confirmPasswordErrorFor(error),
+      currentPasswordFailure: _currentPasswordFailureFor(failure),
+      newPasswordFailure: _newPasswordFailureFor(failure),
+      confirmNewPasswordFailure: _confirmPasswordFailureFor(failure),
     );
   }
 
-  AppError? _currentPasswordErrorFor(AppError error) {
-    return switch (error.type) {
-      AppErrorType.currentPasswordRequired => error,
-      AppErrorType.wrongPassword => error,
+  AppFailure? _currentPasswordFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.currentPasswordRequired => failure,
+      AppFailureType.wrongPassword => failure,
       _ => null,
     };
   }
 
-  AppError? _newPasswordErrorFor(AppError error) {
-    return switch (error.type) {
-      AppErrorType.newPasswordRequired => error,
-      AppErrorType.invalidPassword => error,
-      AppErrorType.weakPassword => error,
-      AppErrorType.samePassword => error,
+  AppFailure? _newPasswordFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.newPasswordRequired => failure,
+      AppFailureType.invalidPassword => failure,
+      AppFailureType.weakPassword => failure,
+      AppFailureType.samePassword => failure,
       _ => null,
     };
   }
 
-  AppError? _confirmPasswordErrorFor(AppError error) {
-    return switch (error.type) {
-      AppErrorType.confirmPasswordRequired => error,
-      AppErrorType.passwordMismatch => error,
+  AppFailure? _confirmPasswordFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.confirmPasswordRequired => failure,
+      AppFailureType.passwordMismatch => failure,
       _ => null,
     };
   }

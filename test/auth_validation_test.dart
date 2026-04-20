@@ -16,7 +16,10 @@ void main() {
       );
 
       expect(result, isA<Failure<void>>());
-      expect((result as Failure<void>).error.type, AppErrorType.samePassword);
+      expect(
+        (result as Failure<void>).failure.type,
+        AppFailureType.samePassword,
+      );
     });
 
     test('rejects missing confirm password separately', () {
@@ -30,8 +33,8 @@ void main() {
 
       expect(result, isA<Failure<void>>());
       expect(
-        (result as Failure<void>).error.type,
-        AppErrorType.confirmPasswordRequired,
+        (result as Failure<void>).failure.type,
+        AppFailureType.confirmPasswordRequired,
       );
     });
   });
@@ -44,8 +47,8 @@ void main() {
 
       expect(result, isA<Failure<void>>());
       expect(
-        (result as Failure<void>).error.type,
-        AppErrorType.currentPasswordRequired,
+        (result as Failure<void>).failure.type,
+        AppFailureType.currentPasswordRequired,
       );
     });
   });

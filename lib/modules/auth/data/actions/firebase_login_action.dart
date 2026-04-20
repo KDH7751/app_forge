@@ -39,7 +39,7 @@ class FirebaseLoginAction implements LoginAction {
         _logger.warn('auth.login.invalid-user');
         await safeRollbackSignOut(firebaseAuth: _firebaseAuth, logger: _logger);
 
-        return const Result<void>.failure(AppError.unknown);
+        return const Result<void>.failure(AppFailure.unknown);
       }
 
       try {
@@ -52,7 +52,7 @@ class FirebaseLoginAction implements LoginAction {
         );
         await safeRollbackSignOut(firebaseAuth: _firebaseAuth, logger: _logger);
 
-        return Result<void>.failure(mapFirestoreError(error));
+        return Result<void>.failure(mapFirestoreFailure(error));
       } catch (error, stackTrace) {
         _logger.error(
           'auth.login.users-upsert.failed.unknown',
@@ -61,7 +61,7 @@ class FirebaseLoginAction implements LoginAction {
         );
         await safeRollbackSignOut(firebaseAuth: _firebaseAuth, logger: _logger);
 
-        return const Result<void>.failure(AppError.unknown);
+        return const Result<void>.failure(AppFailure.unknown);
       }
 
       _logger.info('auth.login.success');
@@ -74,7 +74,7 @@ class FirebaseLoginAction implements LoginAction {
         stackTrace: stackTrace,
       );
 
-      return Result<void>.failure(mapLoginError(error));
+      return Result<void>.failure(mapLoginFailure(error));
     } catch (error, stackTrace) {
       _logger.error(
         'auth.login.failed.unknown',
@@ -82,7 +82,7 @@ class FirebaseLoginAction implements LoginAction {
         stackTrace: stackTrace,
       );
 
-      return const Result<void>.failure(AppError.unknown);
+      return const Result<void>.failure(AppFailure.unknown);
     }
   }
 }

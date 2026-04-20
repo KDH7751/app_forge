@@ -27,7 +27,7 @@ class FirebaseChangePasswordAction implements ChangePasswordAction {
     if (user == null || email == null) {
       _logger.warn('auth.change-password.invalid-user');
 
-      return const Result<void>.failure(AppError.unknown);
+      return const Result<void>.failure(AppFailure.unknown);
     }
 
     try {
@@ -47,7 +47,7 @@ class FirebaseChangePasswordAction implements ChangePasswordAction {
         stackTrace: stackTrace,
       );
 
-      return Result<void>.failure(mapChangePasswordError(error));
+      return Result<void>.failure(mapChangePasswordFailure(error));
     } catch (error, stackTrace) {
       _logger.error(
         'auth.change-password.failed.unknown',
@@ -55,7 +55,7 @@ class FirebaseChangePasswordAction implements ChangePasswordAction {
         stackTrace: stackTrace,
       );
 
-      return const Result<void>.failure(AppError.unknown);
+      return const Result<void>.failure(AppFailure.unknown);
     }
   }
 }

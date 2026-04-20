@@ -1,4 +1,4 @@
-import 'app_error.dart';
+import 'app_failure.dart';
 
 /// 여러 module과 feature가 함께 사용하는 기본 Result 계약.
 sealed class Result<T> {
@@ -8,7 +8,7 @@ sealed class Result<T> {
   const factory Result.success(T value) = Success<T>;
 
   /// 실패 결과 생성.
-  const factory Result.failure(AppError error) = Failure<T>;
+  const factory Result.failure(AppFailure failure) = Failure<T>;
 
   /// 성공 여부.
   bool get isSuccess => this is Success<T>;
@@ -26,7 +26,7 @@ class Success<T> extends Result<T> {
 
 /// 실패 결과.
 class Failure<T> extends Result<T> {
-  const Failure(this.error);
+  const Failure(this.failure);
 
-  final AppError error;
+  final AppFailure failure;
 }

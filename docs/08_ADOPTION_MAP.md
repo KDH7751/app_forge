@@ -21,7 +21,7 @@
 - logger / error reporting port
 - secure/local storage wrapper
 - auth session contract
-- Result / AppError core type
+- Result / AppFailure core type
 
 ### Could
 

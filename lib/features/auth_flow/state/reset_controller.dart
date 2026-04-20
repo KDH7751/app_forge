@@ -11,13 +11,13 @@ final resetControllerProvider =
 class ResetControllerState {
   const ResetControllerState({
     this.email = '',
-    this.emailError,
+    this.emailFailure,
     this.isLoading = false,
     this.isSuccess = false,
   });
 
   final String email;
-  final AppError? emailError;
+  final AppFailure? emailFailure;
   final bool isLoading;
   final bool isSuccess;
 
@@ -25,14 +25,15 @@ class ResetControllerState {
 
   ResetControllerState copyWith({
     String? email,
-    AppError? emailError,
+    AppFailure? emailFailure,
     bool? isLoading,
     bool? isSuccess,
-    bool clearEmailError = false,
+    bool clearEmailFailure = false,
   }) {
     return ResetControllerState(
       email: email ?? this.email,
-      emailError: clearEmailError ? null : (emailError ?? this.emailError),
+      emailFailure:
+          clearEmailFailure ? null : (emailFailure ?? this.emailFailure),
       isLoading: isLoading ?? this.isLoading,
       isSuccess: isSuccess ?? this.isSuccess,
     );
@@ -50,7 +51,7 @@ class ResetController extends AutoDisposeNotifier<ResetControllerState> {
     state = state.copyWith(
       email: email,
       isSuccess: false,
-      clearEmailError: true,
+      clearEmailFailure: true,
     );
   }
 
@@ -59,8 +60,8 @@ class ResetController extends AutoDisposeNotifier<ResetControllerState> {
         .read(authFacadeProvider)
         .validateReset(email: state.email);
 
-    if (validation case Failure<void>(error: final error)) {
-      state = state.copyWith(emailError: error, isSuccess: false);
+    if (validation case Failure<void>(failure: final failure)) {
+      state = state.copyWith(emailFailure: failure, isSuccess: false);
 
       return validation;
     }
@@ -68,7 +69,7 @@ class ResetController extends AutoDisposeNotifier<ResetControllerState> {
     state = state.copyWith(
       isLoading: true,
       isSuccess: false,
-      clearEmailError: true,
+      clearEmailFailure: true,
     );
 
     final result = await ref

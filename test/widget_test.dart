@@ -298,7 +298,7 @@ void main() {
     final sessionSource = _FakeAuthSessionSource();
     final repository = _FakeAuthRepository(
       sessionSource: sessionSource,
-      loginResult: const Result<void>.failure(AppError.network),
+      loginResult: const Result<void>.failure(AppFailure.network),
     );
     addTearDown(sessionSource.dispose);
 
@@ -867,8 +867,8 @@ void main() {
 
       expect(signupResult, isA<Failure<void>>());
       expect(
-        (signupResult as Failure<void>).error.type,
-        AppErrorType.emailAlreadyInUse,
+        (signupResult as Failure<void>).failure.type,
+        AppFailureType.emailAlreadyInUse,
       );
     },
   );
@@ -1166,7 +1166,7 @@ class _FakeAuthRepository implements AuthFacade {
     required String password,
   }) async {
     if (_persistedAuthEmails.contains(email)) {
-      return const Result<void>.failure(AppError.emailAlreadyInUse);
+      return const Result<void>.failure(AppFailure.emailAlreadyInUse);
     }
 
     _persistedAuthEmails.add(email);

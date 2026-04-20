@@ -32,7 +32,7 @@ class FirebaseResetPasswordAction implements ResetPasswordAction {
         stackTrace: stackTrace,
       );
 
-      return Result<void>.failure(mapResetError(error));
+      return Result<void>.failure(mapResetFailure(error));
     } catch (error, stackTrace) {
       _logger.error(
         'auth.reset-password.failed.unknown',
@@ -40,7 +40,7 @@ class FirebaseResetPasswordAction implements ResetPasswordAction {
         stackTrace: stackTrace,
       );
 
-      return const Result<void>.failure(AppError.unknown);
+      return const Result<void>.failure(AppFailure.unknown);
     }
   }
 }

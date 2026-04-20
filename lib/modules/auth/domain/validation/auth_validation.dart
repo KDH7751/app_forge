@@ -10,11 +10,11 @@ Result<void> validateLoginInput({
   final normalizedEmail = email.trim();
 
   if (!_isValidEmail(normalizedEmail)) {
-    return const Result<void>.failure(AppError.invalidEmail);
+    return const Result<void>.failure(AppFailure.invalidEmail);
   }
 
   if (!_isValidPassword(password)) {
-    return const Result<void>.failure(AppError.invalidPassword);
+    return const Result<void>.failure(AppFailure.invalidPassword);
   }
 
   return const Result<void>.success(null);
@@ -33,11 +33,11 @@ Result<void> validateSignupInput({
   }
 
   if (!_isValidPassword(password)) {
-    return const Result<void>.failure(AppError.invalidPassword);
+    return const Result<void>.failure(AppFailure.invalidPassword);
   }
 
   if (password != confirmPassword) {
-    return const Result<void>.failure(AppError.passwordMismatch);
+    return const Result<void>.failure(AppFailure.passwordMismatch);
   }
 
   return const Result<void>.success(null);
@@ -46,7 +46,7 @@ Result<void> validateSignupInput({
 /// reset submit validation.
 Result<void> validateResetInput({required String email}) {
   if (!_isValidEmail(email.trim())) {
-    return const Result<void>.failure(AppError.invalidEmail);
+    return const Result<void>.failure(AppFailure.invalidEmail);
   }
 
   return const Result<void>.success(null);
@@ -55,27 +55,27 @@ Result<void> validateResetInput({required String email}) {
 /// change password submit validation.
 Result<void> validateChangePasswordInput(ChangePasswordInput input) {
   if (input.currentPassword.trim().isEmpty) {
-    return const Result<void>.failure(AppError.currentPasswordRequired);
+    return const Result<void>.failure(AppFailure.currentPasswordRequired);
   }
 
   if (input.newPassword.trim().isEmpty) {
-    return const Result<void>.failure(AppError.newPasswordRequired);
+    return const Result<void>.failure(AppFailure.newPasswordRequired);
   }
 
   if (!_isValidPassword(input.newPassword)) {
-    return const Result<void>.failure(AppError.invalidPassword);
+    return const Result<void>.failure(AppFailure.invalidPassword);
   }
 
   if (input.confirmNewPassword.trim().isEmpty) {
-    return const Result<void>.failure(AppError.confirmPasswordRequired);
+    return const Result<void>.failure(AppFailure.confirmPasswordRequired);
   }
 
   if (input.newPassword != input.confirmNewPassword) {
-    return const Result<void>.failure(AppError.passwordMismatch);
+    return const Result<void>.failure(AppFailure.passwordMismatch);
   }
 
   if (input.currentPassword == input.newPassword) {
-    return const Result<void>.failure(AppError.samePassword);
+    return const Result<void>.failure(AppFailure.samePassword);
   }
 
   return const Result<void>.success(null);
@@ -84,7 +84,7 @@ Result<void> validateChangePasswordInput(ChangePasswordInput input) {
 /// delete account submit validation.
 Result<void> validateDeleteAccountInput(DeleteAccountInput input) {
   if (input.currentPassword.trim().isEmpty) {
-    return const Result<void>.failure(AppError.currentPasswordRequired);
+    return const Result<void>.failure(AppFailure.currentPasswordRequired);
   }
 
   return const Result<void>.success(null);

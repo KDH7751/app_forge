@@ -137,7 +137,7 @@ unit/
 
 ## 에러와 세션 경계
 
-- feature failure는 `Result<T>` / `AppError`로 처리한다.
+- feature failure는 `Result<T>` / `AppFailure`로 처리한다.
 - global/runtime error는 `ErrorHub` / `ErrorPolicy` / `ErrorDecision`으로 처리한다.
 - engine은 에러를 해석하지 않고 전달만 한다.
 - 전역 error listener는 app root에서 한 번만 등록한다.

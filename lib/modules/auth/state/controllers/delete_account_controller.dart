@@ -7,7 +7,7 @@ import '../providers/auth_facade_provider.dart';
 /// profile 소비 UI가 auth deleteAccount 실행을 여는 단일 진입 controller.
 ///
 /// dialog 바깥에서 실제 submit을 담당하며,
-/// currentPassword 입력과 field error만 유지한다.
+/// currentPassword 입력과 field failure만 유지한다.
 /// 삭제 확인 UX가 바뀌면 profile delete 섹션과 함께 수정된다.
 final deleteAccountControllerProvider =
     AutoDisposeNotifierProvider<
@@ -19,27 +19,27 @@ final deleteAccountControllerProvider =
 class DeleteAccountControllerState {
   const DeleteAccountControllerState({
     this.currentPassword = '',
-    this.currentPasswordError,
+    this.currentPasswordFailure,
     this.isLoading = false,
   });
 
   final String currentPassword;
-  final AppError? currentPasswordError;
+  final AppFailure? currentPasswordFailure;
   final bool isLoading;
 
   bool get canSubmit => !isLoading && currentPassword.isNotEmpty;
 
   DeleteAccountControllerState copyWith({
     String? currentPassword,
-    AppError? currentPasswordError,
+    AppFailure? currentPasswordFailure,
     bool? isLoading,
-    bool clearCurrentPasswordError = false,
+    bool clearCurrentPasswordFailure = false,
   }) {
     return DeleteAccountControllerState(
       currentPassword: currentPassword ?? this.currentPassword,
-      currentPasswordError: clearCurrentPasswordError
+      currentPasswordFailure: clearCurrentPasswordFailure
           ? null
-          : (currentPasswordError ?? this.currentPasswordError),
+          : (currentPasswordFailure ?? this.currentPasswordFailure),
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -56,7 +56,7 @@ class DeleteAccountController
   void updateCurrentPassword(String value) {
     state = state.copyWith(
       currentPassword: value,
-      clearCurrentPasswordError: true,
+      clearCurrentPasswordFailure: true,
     );
   }
 
@@ -66,22 +66,22 @@ class DeleteAccountController
         .read(authFacadeProvider)
         .validateDeleteAccount(input);
 
-    if (validation case Failure<void>(error: final error)) {
+    if (validation case Failure<void>(failure: final failure)) {
       state = state.copyWith(
-        currentPasswordError: _currentPasswordErrorFor(error),
+        currentPasswordFailure: _currentPasswordFailureFor(failure),
       );
 
       return validation;
     }
 
-    state = state.copyWith(isLoading: true, clearCurrentPasswordError: true);
+    state = state.copyWith(isLoading: true, clearCurrentPasswordFailure: true);
 
     final result = await ref.read(authFacadeProvider).deleteAccount(input);
 
-    if (result case Failure<void>(error: final error)) {
+    if (result case Failure<void>(failure: final failure)) {
       state = state.copyWith(
         isLoading: false,
-        currentPasswordError: _currentPasswordErrorFor(error),
+        currentPasswordFailure: _currentPasswordFailureFor(failure),
       );
 
       return result;
@@ -92,10 +92,10 @@ class DeleteAccountController
     return result;
   }
 
-  AppError? _currentPasswordErrorFor(AppError error) {
-    return switch (error.type) {
-      AppErrorType.currentPasswordRequired => error,
-      AppErrorType.wrongPassword => error,
+  AppFailure? _currentPasswordFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.currentPasswordRequired => failure,
+      AppFailureType.wrongPassword => failure,
       _ => null,
     };
   }

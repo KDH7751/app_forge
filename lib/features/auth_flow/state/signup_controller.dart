@@ -13,18 +13,18 @@ class SignupControllerState {
     this.email = '',
     this.password = '',
     this.confirmPassword = '',
-    this.emailError,
-    this.passwordError,
-    this.confirmPasswordError,
+    this.emailFailure,
+    this.passwordFailure,
+    this.confirmPasswordFailure,
     this.isLoading = false,
   });
 
   final String email;
   final String password;
   final String confirmPassword;
-  final AppError? emailError;
-  final AppError? passwordError;
-  final AppError? confirmPasswordError;
+  final AppFailure? emailFailure;
+  final AppFailure? passwordFailure;
+  final AppFailure? confirmPasswordFailure;
   final bool isLoading;
 
   bool get canSubmit =>
@@ -37,25 +37,26 @@ class SignupControllerState {
     String? email,
     String? password,
     String? confirmPassword,
-    AppError? emailError,
-    AppError? passwordError,
-    AppError? confirmPasswordError,
+    AppFailure? emailFailure,
+    AppFailure? passwordFailure,
+    AppFailure? confirmPasswordFailure,
     bool? isLoading,
-    bool clearEmailError = false,
-    bool clearPasswordError = false,
-    bool clearConfirmPasswordError = false,
+    bool clearEmailFailure = false,
+    bool clearPasswordFailure = false,
+    bool clearConfirmPasswordFailure = false,
   }) {
     return SignupControllerState(
       email: email ?? this.email,
       password: password ?? this.password,
       confirmPassword: confirmPassword ?? this.confirmPassword,
-      emailError: clearEmailError ? null : (emailError ?? this.emailError),
-      passwordError: clearPasswordError
+      emailFailure:
+          clearEmailFailure ? null : (emailFailure ?? this.emailFailure),
+      passwordFailure: clearPasswordFailure
           ? null
-          : (passwordError ?? this.passwordError),
-      confirmPasswordError: clearConfirmPasswordError
+          : (passwordFailure ?? this.passwordFailure),
+      confirmPasswordFailure: clearConfirmPasswordFailure
           ? null
-          : (confirmPasswordError ?? this.confirmPasswordError),
+          : (confirmPasswordFailure ?? this.confirmPasswordFailure),
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -69,17 +70,17 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
   }
 
   void updateEmail(String email) {
-    state = state.copyWith(email: email, clearEmailError: true);
+    state = state.copyWith(email: email, clearEmailFailure: true);
   }
 
   void updatePassword(String password) {
-    state = state.copyWith(password: password, clearPasswordError: true);
+    state = state.copyWith(password: password, clearPasswordFailure: true);
   }
 
   void updateConfirmPassword(String confirmPassword) {
     state = state.copyWith(
       confirmPassword: confirmPassword,
-      clearConfirmPasswordError: true,
+      clearConfirmPasswordFailure: true,
     );
   }
 
@@ -92,11 +93,11 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
           confirmPassword: state.confirmPassword,
         );
 
-    if (validation case Failure<void>(error: final error)) {
+    if (validation case Failure<void>(failure: final failure)) {
       state = state.copyWith(
-        emailError: _emailErrorFor(error),
-        passwordError: _passwordErrorFor(error),
-        confirmPasswordError: _confirmPasswordErrorFor(error),
+        emailFailure: _emailFailureFor(failure),
+        passwordFailure: _passwordFailureFor(failure),
+        confirmPasswordFailure: _confirmPasswordFailureFor(failure),
       );
 
       return validation;
@@ -104,9 +105,9 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
 
     state = state.copyWith(
       isLoading: true,
-      clearEmailError: true,
-      clearPasswordError: true,
-      clearConfirmPasswordError: true,
+      clearEmailFailure: true,
+      clearPasswordFailure: true,
+      clearConfirmPasswordFailure: true,
     );
 
     final result = await ref
@@ -122,23 +123,23 @@ class SignupController extends AutoDisposeNotifier<SignupControllerState> {
     return result;
   }
 
-  AppError? _emailErrorFor(AppError error) {
-    return switch (error.type) {
-      AppErrorType.invalidEmail => error,
+  AppFailure? _emailFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.invalidEmail => failure,
       _ => null,
     };
   }
 
-  AppError? _passwordErrorFor(AppError error) {
-    return switch (error.type) {
-      AppErrorType.invalidPassword => error,
+  AppFailure? _passwordFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.invalidPassword => failure,
       _ => null,
     };
   }
 
-  AppError? _confirmPasswordErrorFor(AppError error) {
-    return switch (error.type) {
-      AppErrorType.passwordMismatch => error,
+  AppFailure? _confirmPasswordFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.passwordMismatch => failure,
       _ => null,
     };
   }

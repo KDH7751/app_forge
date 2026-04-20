@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
 
-import '../state/auth_flow_error_report_helper.dart';
-import '../state/auth_flow_error_mapper.dart';
+import '../state/auth_flow_failure_report_helper.dart';
+import '../state/auth_flow_failure_mapper.dart';
 import '../state/auth_flow_notice.dart';
 import '../state/reset_controller.dart';
 
@@ -73,7 +73,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                   decoration: InputDecoration(
                     labelText: 'Email',
                     border: const OutlineInputBorder(),
-                    errorText: mapAuthFlowErrorText(state.emailError),
+                    errorText: mapAuthFlowFailureText(state.emailFailure),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -87,9 +87,13 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                           }
 
                           if (result case Failure<void>(
-                            error: final error,
-                          ) when shouldReportAuthFlowError(error)) {
-                            reportUiError(context, error, domainError: error);
+                            failure: final failure,
+                          ) when shouldReportAuthFlowFailure(failure)) {
+                            reportUiError(
+                              context,
+                              failure,
+                              domainError: failure,
+                            );
                           }
                         }
                       : null,

@@ -17,7 +17,7 @@ export 'domain/models/change_password_input.dart';
 export 'domain/models/delete_account_input.dart';
 export 'domain/session/auth_session.dart';
 export 'domain/validation/auth_validation.dart';
-export 'state/auth_error_mapper.dart';
+export 'state/auth_failure_mapper.dart';
 export 'state/controllers/change_password_controller.dart';
 export 'state/controllers/delete_account_controller.dart';
 export 'state/controllers/logout_controller.dart';

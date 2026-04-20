@@ -31,7 +31,7 @@ class FirebaseDeleteAccountAction implements DeleteAccountAction {
     if (user == null || email == null) {
       _logger.warn('auth.delete-account.invalid-user');
 
-      return const Result<void>.failure(AppError.unknown);
+      return const Result<void>.failure(AppFailure.unknown);
     }
 
     final uid = user.uid;
@@ -51,7 +51,7 @@ class FirebaseDeleteAccountAction implements DeleteAccountAction {
         stackTrace: stackTrace,
       );
 
-      return Result<void>.failure(mapDeleteAccountAuthError(error));
+      return Result<void>.failure(mapDeleteAccountAuthFailure(error));
     } catch (error, stackTrace) {
       _logger.error(
         'auth.delete-account.auth-provider.failed.unknown',
@@ -59,7 +59,7 @@ class FirebaseDeleteAccountAction implements DeleteAccountAction {
         stackTrace: stackTrace,
       );
 
-      return const Result<void>.failure(AppError.unknown);
+      return const Result<void>.failure(AppFailure.unknown);
     }
 
     try {
@@ -79,7 +79,7 @@ class FirebaseDeleteAccountAction implements DeleteAccountAction {
         uid: uid,
       );
 
-      return Result<void>.failure(mapFirestoreError(error));
+      return Result<void>.failure(mapFirestoreFailure(error));
     } catch (error, stackTrace) {
       _logger.error(
         'auth.delete-account.users-document.failed.unknown',
@@ -92,7 +92,7 @@ class FirebaseDeleteAccountAction implements DeleteAccountAction {
         uid: uid,
       );
 
-      return const Result<void>.failure(AppError.unknown);
+      return const Result<void>.failure(AppFailure.unknown);
     }
   }
 }

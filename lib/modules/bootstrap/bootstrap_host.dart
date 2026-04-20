@@ -229,7 +229,7 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
       return;
     }
 
-    final message = mapAppErrorNotificationText(event.envelope.domainError);
+    final message = mapAppFailureNotificationText(event.envelope.domainError);
 
     if (message == null || message.isEmpty) {
       return;

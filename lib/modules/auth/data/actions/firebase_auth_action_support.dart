@@ -104,88 +104,88 @@ Future<bool> cleanupDeletedAccountDocument({
   return false;
 }
 
-/// Firebase login 오류를 auth AppError로 매핑한다.
-AppError mapLoginError(FirebaseAuthException error) {
+/// Firebase login 오류를 auth AppFailure로 매핑한다.
+AppFailure mapLoginFailure(FirebaseAuthException error) {
   switch (error.code) {
     case 'user-not-found':
-      return AppError.userNotFound;
+      return AppFailure.userNotFound;
     case 'wrong-password':
-      return AppError.wrongPassword;
+      return AppFailure.wrongPassword;
     case 'invalid-email':
     case 'invalid-credential':
-      return AppError.invalidEmail;
+      return AppFailure.invalidEmail;
     case 'network-request-failed':
-      return AppError.network;
+      return AppFailure.network;
     default:
-      return AppError.unknown;
+      return AppFailure.unknown;
   }
 }
 
-/// Firebase signup 오류를 auth AppError로 매핑한다.
-AppError mapSignupError(FirebaseAuthException error) {
+/// Firebase signup 오류를 auth AppFailure로 매핑한다.
+AppFailure mapSignupFailure(FirebaseAuthException error) {
   switch (error.code) {
     case 'email-already-in-use':
-      return AppError.emailAlreadyInUse;
+      return AppFailure.emailAlreadyInUse;
     case 'weak-password':
-      return AppError.weakPassword;
+      return AppFailure.weakPassword;
     case 'invalid-email':
-      return AppError.invalidEmail;
+      return AppFailure.invalidEmail;
     case 'network-request-failed':
-      return AppError.network;
+      return AppFailure.network;
     default:
-      return AppError.unknown;
+      return AppFailure.unknown;
   }
 }
 
-/// Firebase reset password 오류를 auth AppError로 매핑한다.
-AppError mapResetError(FirebaseAuthException error) {
+/// Firebase reset password 오류를 auth AppFailure로 매핑한다.
+AppFailure mapResetFailure(FirebaseAuthException error) {
   switch (error.code) {
     case 'user-not-found':
-      return AppError.userNotFound;
+      return AppFailure.userNotFound;
     case 'invalid-email':
-      return AppError.invalidEmail;
+      return AppFailure.invalidEmail;
     case 'network-request-failed':
-      return AppError.network;
+      return AppFailure.network;
     default:
-      return AppError.unknown;
+      return AppFailure.unknown;
   }
 }
 
-/// Firebase change password 오류를 auth AppError로 매핑한다.
-AppError mapChangePasswordError(FirebaseAuthException error) {
+/// Firebase change password 오류를 auth AppFailure로 매핑한다.
+AppFailure mapChangePasswordFailure(FirebaseAuthException error) {
   switch (error.code) {
     case 'wrong-password':
     case 'invalid-credential':
-      return AppError.wrongPassword;
+      return AppFailure.wrongPassword;
     case 'weak-password':
-      return AppError.weakPassword;
+      return AppFailure.weakPassword;
     case 'network-request-failed':
-      return AppError.network;
+      return AppFailure.network;
     default:
-      return AppError.unknown;
+      return AppFailure.unknown;
   }
 }
 
-/// Firebase delete account auth-side 오류를 auth AppError로 매핑한다.
-AppError mapDeleteAccountAuthError(FirebaseAuthException error) {
+/// Firebase delete account auth-side 오류를 auth AppFailure로 매핑한다.
+AppFailure mapDeleteAccountAuthFailure(FirebaseAuthException error) {
   switch (error.code) {
     case 'wrong-password':
     case 'invalid-credential':
-      return AppError.wrongPassword;
+      return AppFailure.wrongPassword;
     case 'network-request-failed':
-      return AppError.network;
+      return AppFailure.network;
     default:
-      return AppError.unknown;
+      return AppFailure.unknown;
   }
 }
 
-/// Firestore users 문서 작업 오류를 auth AppError로 매핑한다.
-AppError mapFirestoreError(FirebaseException error) {
+/// Firestore users 문서 작업 오류를 auth AppFailure로 매핑한다.
+AppFailure mapFirestoreFailure(FirebaseException error) {
   switch (error.code) {
     case 'unavailable':
     case 'network-request-failed':
-      return AppError.network;
+      return AppFailure.network;
     default:
-      return AppError.unknown;
+      return AppFailure.unknown;
   }
 }

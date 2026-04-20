@@ -41,7 +41,7 @@ unit/
 
 - module 또는 feature 외부로 노출되는 모든 비동기 작업은 `Result<T>`를 반환해야 한다.
 - raw `FirebaseException`, 파싱 에러, 전송 에러를 그대로 throw하지 않는다.
-- 외부 실패는 `AppError`로 매핑한다.
+- 외부 실패는 `AppFailure`로 매핑한다.
 - validation 본체는 domain/state에 둘 수 있지만 외부 SDK 호출은 data에서만 수행한다.
 
 global/runtime error:

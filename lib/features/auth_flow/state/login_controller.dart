@@ -12,15 +12,15 @@ class LoginControllerState {
   const LoginControllerState({
     this.email = '',
     this.password = '',
-    this.emailError,
-    this.passwordError,
+    this.emailFailure,
+    this.passwordFailure,
     this.isLoading = false,
   });
 
   final String email;
   final String password;
-  final AppError? emailError;
-  final AppError? passwordError;
+  final AppFailure? emailFailure;
+  final AppFailure? passwordFailure;
   final bool isLoading;
 
   bool get canSubmit =>
@@ -29,19 +29,20 @@ class LoginControllerState {
   LoginControllerState copyWith({
     String? email,
     String? password,
-    AppError? emailError,
-    AppError? passwordError,
+    AppFailure? emailFailure,
+    AppFailure? passwordFailure,
     bool? isLoading,
-    bool clearEmailError = false,
-    bool clearPasswordError = false,
+    bool clearEmailFailure = false,
+    bool clearPasswordFailure = false,
   }) {
     return LoginControllerState(
       email: email ?? this.email,
       password: password ?? this.password,
-      emailError: clearEmailError ? null : (emailError ?? this.emailError),
-      passwordError: clearPasswordError
+      emailFailure:
+          clearEmailFailure ? null : (emailFailure ?? this.emailFailure),
+      passwordFailure: clearPasswordFailure
           ? null
-          : (passwordError ?? this.passwordError),
+          : (passwordFailure ?? this.passwordFailure),
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -55,11 +56,11 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
   }
 
   void updateEmail(String email) {
-    state = state.copyWith(email: email, clearEmailError: true);
+    state = state.copyWith(email: email, clearEmailFailure: true);
   }
 
   void updatePassword(String password) {
-    state = state.copyWith(password: password, clearPasswordError: true);
+    state = state.copyWith(password: password, clearPasswordFailure: true);
   }
 
   Future<Result<void>> submit() async {
@@ -67,10 +68,10 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
         .read(authFacadeProvider)
         .validateLogin(email: state.email, password: state.password);
 
-    if (validation case Failure<void>(error: final error)) {
+    if (validation case Failure<void>(failure: final failure)) {
       state = state.copyWith(
-        emailError: _emailErrorFor(error),
-        passwordError: _passwordErrorFor(error),
+        emailFailure: _emailFailureFor(failure),
+        passwordFailure: _passwordFailureFor(failure),
       );
 
       return validation;
@@ -78,8 +79,8 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
 
     state = state.copyWith(
       isLoading: true,
-      clearEmailError: true,
-      clearPasswordError: true,
+      clearEmailFailure: true,
+      clearPasswordFailure: true,
     );
 
     final result = await ref
@@ -95,16 +96,16 @@ class LoginController extends AutoDisposeNotifier<LoginControllerState> {
     return result;
   }
 
-  AppError? _emailErrorFor(AppError error) {
-    return switch (error.type) {
-      AppErrorType.invalidEmail => error,
+  AppFailure? _emailFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.invalidEmail => failure,
       _ => null,
     };
   }
 
-  AppError? _passwordErrorFor(AppError error) {
-    return switch (error.type) {
-      AppErrorType.invalidPassword => error,
+  AppFailure? _passwordFailureFor(AppFailure failure) {
+    return switch (failure.type) {
+      AppFailureType.invalidPassword => failure,
       _ => null,
     };
   }
