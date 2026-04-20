@@ -54,19 +54,44 @@
 - 2026-04-09: delete cleanup 실패가 남아 있으면 success로 승격하지 않는다.
 - 2026-04-09: delete 확인 dialog는 profile UI에 두되 실제 action 실행 소유권은 auth에 둔다.
 - 2026-04-09: changePassword 성공 시 controller state는 `isSuccess`를 유지하되 입력값과 field error를 함께 초기화한다.
+- 2026-04-09: auth_entry와 profile UI의 루트 알림 보고 분기는 feature-local helper로만 정리하고, 전역 notify 정책으로 승격하지 않는다.
+- 2026-04-09: 실제 계정 삭제 성공 의미는 계속 `auth provider delete + users/{uid} delete` 정의에만 있다.
 
-## Phase 3.4 / 3.5 session integrity and public contract
+## Phase 3.4 session integrity
 
-- 2026-04-09: 서버 계정 부재와 서버 차단/비활성은 invalid session으로 해석한다.
-- 2026-04-09: invalid 감지 시 보호 라우트는 즉시 이탈시키고 강제 logout은 그 직후 auth 흐름에서 수행한다.
+- 2026-04-09: Session Integrity를 위해 서버 계정 부재와 서버 차단/비활성을 invalid session으로 해석한다.
+- 2026-04-09: 계정 삭제, 차단, 비활성은 같은 invalid 축에 두되 내부 사유는 구분할 수 있게 유지한다.
+- 2026-04-09: invalid 감지 시 보호 라우트는 즉시 public auth entry로 이탈시키고, 강제 logout은 그 직후 auth 흐름에서 수행한다.
 - 2026-04-09: 보호 라우트 이탈은 signOut 완료를 기다리지 않는다.
-- 2026-04-09: session 관찰은 `auth_session_provider` 단일 경로로 유지한다.
-- 2026-04-09: public `AuthSession` 최상위 상태는 `Authenticated`, `Unauthenticated`, `Invalid`, `Pending`으로 고정한다.
-- 2026-04-09: `unknown`은 제거하고 `Pending`으로 흡수하며 `recovery`는 internal 처리 상태로 유지한다.
-- 2026-04-09: 첫 `users/{uid}` 판정 전, auth provider probe 판정 전, recovery in-flight 동안의 합법적 과도 상태는 public contract에서 `Pending`으로 수렴한다.
-- 2026-04-09: redirect는 internal flag가 아니라 최종 `AuthSession` 상태만 소비한다.
-- 2026-04-09: `Authenticated`는 `uid`, `email`만 가지고 `Invalid`는 public `reason`만 가진다.
-- 2026-04-09: public invalid reason은 `missingAccount`, `blocked`, `disabled`만 사용하고 raw internal reason은 이 값들로 매핑한다.
+- 2026-04-09: session 관찰은 계속 `auth_session_provider` 단일 경로로 유지한다.
+- 2026-04-09: `users/{uid}` 문서 존재 여부와 서버 상태값(`blocked`, `disabled`)은 raw fact로만 관찰하고 invalid 해석은 provider/session 계열에서 수행한다.
+- 2026-04-09: redirect 판단 책임은 계속 app layer가 가지고, bootstrap은 observation 구독, `refreshListenable` 갱신, forced logout 연결 같은 runtime wiring만 담당한다.
+- 2026-04-09: Firestore 문서 기반 invalidation 외에 auth provider server-side delete/disable도 감지 대상으로 포함한다.
+- 2026-04-09: auth provider server-side delete/disable 감지는 `currentUser.reload()` probe를 사용한 polling 방식으로 구현하고 기본 probe interval은 `30초`로 둔다.
+- 2026-04-09: 위 polling은 최소 보수 구현이며, 즉시 push형 반영이 아니므로 최대 probe interval만큼 감지 지연이 생길 수 있다.
+- 2026-04-09: login/signup 직후 첫 `users/{uid}` 스냅샷 전에는 보호 라우트를 잘못 허용하지 않도록 pending 구간을 두고 blank UI가 아니라 최소 placeholder로 처리한다.
+- 2026-04-09: recovery in-flight 동안에는 `missingUserDocument` invalidation만 일시 보류해 첫 login/signup 안에서 문서 복구와 정상 진입이 함께 닫히게 한다.
+- 2026-04-09: Firestore `users/{uid}` 문서 삭제로 인한 invalid + logout은 세션 무효화 대응이지 실제 계정 삭제 성공 의미가 아니다.
+- 2026-04-09: 실제 계정 삭제 성공 의미는 계속 Phase 3.3의 `auth provider delete + users/{uid} delete` 정의에만 있다.
+
+## Phase 3.5 auth session contract stabilization
+
+- 2026-04-09: 외부 노출 session public contract 최상위 이름은 계속 `AuthSession`으로 유지한다.
+- 2026-04-09: `AuthSession` public contract는 상태별 타입 분리 구조로 고정하고 enum + nullable payload 묶음 방식으로 되돌리지 않는다.
+- 2026-04-09: public 최상위 상태는 `Authenticated`, `Unauthenticated`, `Invalid`, `Pending`으로 고정한다.
+- 2026-04-09: `unknown`은 public contract에서 제거하고 `Pending`으로 흡수한다.
+- 2026-04-09: `recovery`는 최상위 public 상태가 아니라 internal 처리 상태로 유지한다.
+- 2026-04-09: 첫 `users/{uid}` 판정 전, auth provider probe 판정 전, recovery in-flight로 인해 `missingUserDocument` 판정이 일시 보류된 상태는 모두 public contract에서 `Pending`으로 수렴한다.
+- 2026-04-09: redirect는 internal flag를 직접 보지 않고 최종 `AuthSession` 상태만 소비한다.
+- 2026-04-09: `Authenticated`는 보호 라우트를 허용하고, `Unauthenticated`는 public auth entry로 보낸다.
+- 2026-04-09: `Invalid`는 public auth entry로 이탈시키고 강제 logout 흐름과 연결한다.
+- 2026-04-09: `Pending`은 placeholder 대기 상태로 두고 목적지 확정을 보류한다.
+- 2026-04-09: observation `AsyncError`는 `Unauthenticated`로 강등하지 않고 `Pending`으로 유지한다.
+- 2026-04-09: public invalid reason 타입 이름은 `InvalidReason`으로 고정하고 값은 `missingAccount`, `blocked`, `disabled`만 사용한다.
+- 2026-04-09: internal raw invalidation reason은 `missingUserDocument -> missingAccount`, `missingAuthProviderUser -> missingAccount`, `blockedUser -> blocked`, `disabledUser -> disabled`, `disabledAuthProviderUser -> disabled`로 public reason에 매핑한다.
+- 2026-04-09: `Authenticated` payload는 `uid`, `email`만 가진다.
+- 2026-04-09: `Unauthenticated`와 `Pending`은 추가 payload를 가지지 않는다.
+- 2026-04-09: `Invalid`는 public `reason`만 가지며 `uid`, `email`은 노출하지 않는다.
 - 2026-04-09: profile/domain 성격 데이터와 internal polling/recovery 세부는 public `AuthSession` contract에 올리지 않는다.
 
 ## Phase 3.6 provider-set composition and structure lock
