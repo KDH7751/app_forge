@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
 
 /// profile route에서 auth changePassword action을 소비하는 임시 UI 섹션.
@@ -76,6 +75,7 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
   Widget build(BuildContext context) {
     final state = ref.watch(changePasswordControllerProvider);
     final controller = ref.read(changePasswordControllerProvider.notifier);
+    final feedbackCoordinator = ref.read(authFeedbackCoordinatorProvider);
     final currentPasswordPresentation =
         AuthFailurePresenter.presentForProfileAction(
           state.currentPasswordFailure,
@@ -148,16 +148,7 @@ class _ChangePasswordSectionState extends ConsumerState<ChangePasswordSection> {
                       }
 
                       if (result case Failure<void>(failure: final failure)) {
-                        final presentation =
-                            AuthFailurePresenter.presentForProfileAction(
-                              failure,
-                            );
-
-                        if (presentation?.shouldReportToRootFeedback != true) {
-                          return;
-                        }
-
-                        reportUiError(context, failure, domainError: failure);
+                        feedbackCoordinator.handleProfileActionFailure(failure);
                       }
                     }
                   : null,

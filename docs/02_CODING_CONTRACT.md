@@ -50,6 +50,14 @@ global/runtime error:
 - root UI는 `ErrorDecision` 기반으로 반응한다.
 - feature 내부에서 전역 error stream을 직접 listen하지 않는다.
 
+feedback:
+
+- app-wide user feedback은 `FeedbackRequest`와 feedback dispatcher 흐름으로 처리한다.
+- `FeedbackRequest`는 `AppFailure`를 대체하지 않는다.
+- auth feature failure의 공식 root feedback 소비 패턴은 `AuthFailurePresenter -> AuthFeedbackCoordinator -> feedback dispatch`다.
+- auth는 `AuthFeedbackFactory`를 별도 계층으로 유지하지 않고 coordinator에 흡수한다.
+- feedback 중앙 계층은 request 표시 운영만 담당하고 failure 의미를 다시 해석하지 않는다.
+
 세부 정책은 `docs/07_ERROR_POLICY.md`, 전체 구조는 `docs/01_ARCHITECTURE.md`를 따른다.
 
 ## Provider 규칙
@@ -65,6 +73,7 @@ global/runtime error:
 - engine, module, `features/common`은 외부 소비 지점이 있을 때 public surface 파일을 둔다.
 - 기본 기준은 `engine/engine.dart`, `modules/<name>/<name>.dart`, `modules/foundation/foundation.dart`, `features/common/common.dart`다.
 - `modules/bootstrap/bootstrap.dart`는 bootstrap module의 유일한 public entry 배럴이다.
+- `modules/feedback/feedback.dart`는 feedback module의 public surface다.
 - consumer feature와 app은 module 내부 concrete 구현 대신 public surface를 먼저 소비한다.
 - public surface에는 공개 계약, 설정 표면, 소비자에게 필요한 provider/controller/helper만 노출한다.
 - assembly, provider-specific runtime/support, parser, datasource, 내부 wiring 세부는 public surface에 올리지 않는다.
@@ -119,3 +128,4 @@ engine 경계:
 - Engine이 app, module, consumer feature를 import하는 것
 - 임의의 singleton으로 layer 경계를 우회하는 것
 - 설정 편의를 이유로 public surface를 계속 넓히는 것
+- raw `AppFailure`를 `FeedbackRequest` 대신 중앙 feedback 계층에 직접 넘기는 것

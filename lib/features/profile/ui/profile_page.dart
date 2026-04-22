@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
 import 'change_password_section.dart';
 import 'delete_account_section.dart';
@@ -13,6 +12,7 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(logoutControllerProvider);
     final controller = ref.read(logoutControllerProvider.notifier);
+    final feedbackCoordinator = ref.read(authFeedbackCoordinatorProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -38,17 +38,9 @@ class ProfilePage extends ConsumerWidget {
                         }
 
                         if (result case Failure<void>(failure: final failure)) {
-                          final presentation =
-                              AuthFailurePresenter.presentForProfileAction(
-                                failure,
-                              );
-
-                          if (presentation?.shouldReportToRootFeedback !=
-                              true) {
-                            return;
-                          }
-
-                          reportUiError(context, failure, domainError: failure);
+                          feedbackCoordinator.handleProfileActionFailure(
+                            failure,
+                          );
                         }
                       },
                 child: state.isLoading

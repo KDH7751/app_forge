@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
-import 'delete_account_confirm_dialog.dart';
 
 /// profile route에서 auth deleteAccount action을 여는 임시 UI 섹션.
 class DeleteAccountSection extends ConsumerWidget {
@@ -12,6 +10,7 @@ class DeleteAccountSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(deleteAccountControllerProvider);
     final controller = ref.read(deleteAccountControllerProvider.notifier);
+    final feedbackCoordinator = ref.read(authFeedbackCoordinatorProvider);
 
     return Card(
       child: Padding(
@@ -29,43 +28,10 @@ class DeleteAccountSection extends ConsumerWidget {
             FilledButton.tonal(
               onPressed: state.isLoading
                   ? null
-                  : () async {
-                      final dialogResult =
-                          await showDialog<DeleteAccountDialogResult>(
-                            context: context,
-                            builder: (_) => const DeleteAccountConfirmDialog(),
-                          );
-
-                      if (dialogResult == null) {
-                        return;
-                      }
-
-                      controller.updateCurrentPassword(
-                        dialogResult.currentPassword,
+                  : () {
+                      feedbackCoordinator.showDeleteAccountConfirm(
+                        controller: controller,
                       );
-
-                      final result = await controller.submit();
-
-                      if (!context.mounted) {
-                        return;
-                      }
-
-                      if (result case Failure<void>(failure: final failure)) {
-                        final presentation =
-                            AuthFailurePresenter.presentForProfileAction(
-                              failure,
-                            );
-
-                        if (presentation?.shouldReportToRootFeedback == true) {
-                          reportUiError(context, failure, domainError: failure);
-                        } else if (presentation != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(presentation.message)),
-                          );
-                        }
-
-                        return;
-                      }
                     },
               style: FilledButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,

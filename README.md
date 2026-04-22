@@ -7,7 +7,7 @@
 
 ## 현재 상태
 
-현재 Phase 3.7까지 완료되었다.
+현재 Phase 3.8까지 완료되었다.
 
 구현된 범위:
 
@@ -20,6 +20,9 @@
 - app layer auth redirect와 Session Integrity
 - Result<T> / AppFailure 기반 feature failure 처리
 - feature failure baseline (`AppFailureType`, validation `fieldErrors`, auth normalization)
+- app-wide user feedback system (`snackbar / dialog / banner / modalSheet`)
+- auth action failure -> `AuthFeedbackCoordinator` -> feedback request 연결
+- session invalid -> root sessionExpired banner 연결
 - ErrorHub / ErrorPolicy / ErrorDecision 기반 전역 에러 처리
 - runZonedGuarded 기반 runtime bootstrap
 
@@ -49,6 +52,11 @@ lib/
 - runtime code inside `lib/`는 relative import를 기본으로 사용하며 `lib/engine/src/**`를 직접 import하지 않는다.
 - feature는 engine public surface와 module public surface를 소비할 수 있지만 module concrete/internal 구현은 직접 소비하지 않는다.
 - `lib/modules/bootstrap/bootstrap.dart`는 bootstrap module의 유일한 public entry 배럴이다.
+- bootstrap은 host/runtime wiring만 담당하며 app 설정 source of truth를 늘리거나 대체하지 않는다.
+- `lib/modules/feedback`는 3.8 잠금 범위를 구현하기 위한 reusable module이며, 범위 밖 범용 확장을 선행하지 않는다.
+- auth의 공식 root feedback 소비 패턴은 `AuthFailurePresenter -> AuthFeedbackCoordinator -> feedback dispatch`다.
+- `snackbar`와 `banner`는 root overlay presenter 경로로 표시되고, `dialog`와 `modalSheet`는 feedback host의 navigator/context 경로를 유지한다.
+- `FeedbackRequest`는 `AppFailure`를 대체하지 않으며, ErrorHub와 feedback은 모델/정책/입력 경로를 분리 유지한다.
 
 ## 문서 읽기 순서
 

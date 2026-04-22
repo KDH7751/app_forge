@@ -30,6 +30,7 @@ import '../../app/app_features.dart';
 import '../../app/app_plugins.dart';
 import '../../engine/engine.dart';
 import '../auth/auth.dart';
+import '../feedback/feedback.dart';
 
 /// app root runtime 연결을 호스팅하는 widget.
 class Bootstrap extends StatefulWidget {
@@ -50,6 +51,7 @@ class Bootstrap extends StatefulWidget {
 class _BootstrapState extends State<Bootstrap> {
   late final NavigationStateNotifier _navigationNotifier;
   late final ValueNotifier<AuthSession> _authSessionNotifier;
+  late final GlobalKey<NavigatorState> _rootNavigatorKey;
   late final RouterEngine _routerEngine;
   late final GoRouter _router;
   late final ErrorHub _errorHub;
@@ -69,6 +71,7 @@ class _BootstrapState extends State<Bootstrap> {
         routes: appRoutes,
       ),
     );
+    _rootNavigatorKey = GlobalKey<NavigatorState>();
     // auth session provider bridge가 첫 값을 밀어주기 전까지는 pending으로 둔다.
     _authSessionNotifier = ValueNotifier<AuthSession>(const Pending());
     _routerEngine = RouterEngine(
@@ -76,6 +79,7 @@ class _BootstrapState extends State<Bootstrap> {
       initialLocation: appConfig.initialLocation,
       shellConfig: appConfig.shellConfig,
       navigationNotifier: _navigationNotifier,
+      navigatorKey: _rootNavigatorKey,
       redirect: _handleAppRedirect,
       refreshListenable: _authSessionNotifier,
     );
@@ -123,6 +127,7 @@ class _BootstrapState extends State<Bootstrap> {
           router: _router,
           authSessionNotifier: _authSessionNotifier,
           errorHub: _errorHub,
+          rootNavigatorKey: _rootNavigatorKey,
         ),
       ),
     );
@@ -135,11 +140,13 @@ class _BootstrapView extends ConsumerStatefulWidget {
     required this.router,
     required this.authSessionNotifier,
     required this.errorHub,
+    required this.rootNavigatorKey,
   });
 
   final GoRouter router;
   final ValueNotifier<AuthSession> authSessionNotifier;
   final ErrorHub errorHub;
+  final GlobalKey<NavigatorState> rootNavigatorKey;
 
   @override
   ConsumerState<_BootstrapView> createState() => _BootstrapViewState();
@@ -150,8 +157,6 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   ProviderSubscription<AuthSession>? _authSessionSubscription;
   ProviderSubscription<AsyncValue<AuthSessionObservation>>?
   _authSessionObservationSubscription;
-  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
-      GlobalKey<ScaffoldMessengerState>();
   StreamSubscription<ErrorEvent>? _errorSubscription;
   String? _pendingForcedLogoutUid;
 
@@ -165,7 +170,7 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
 
     _authSessionSubscription = ref.listenManual<AuthSession>(
       authSessionProvider,
-      (_, next) => _handleAuthSessionChanged(next),
+      (previous, next) => _handleAuthSessionChanged(previous, next),
       fireImmediately: true,
     );
     _authSessionObservationSubscription = ref
@@ -187,9 +192,21 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
   }
 
   /// public auth session contract를 app redirect 입력으로 연결한다.
-  void _handleAuthSessionChanged(AuthSession authSession) {
+  void _handleAuthSessionChanged(
+    AuthSession? previous,
+    AuthSession authSession,
+  ) {
     if (widget.authSessionNotifier.value != authSession) {
       widget.authSessionNotifier.value = authSession;
+    }
+
+    if (authSession is Invalid && previous != authSession) {
+      ref
+          .read(feedbackDispatcherProvider)
+          .showSessionExpired(
+            message: _sessionExpiredMessageFor(authSession.reason),
+            dedupeKey: 'session-expired-${authSession.reason.name}',
+          );
     }
   }
 
@@ -229,15 +246,13 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
       return;
     }
 
-    final message = mapAppFailureNotificationText(event.envelope.domainError);
-
-    if (message == null || message.isEmpty) {
-      return;
-    }
-
-    _scaffoldMessengerKey.currentState
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    ref
+        .read(feedbackDispatcherProvider)
+        .showError(
+          message: '문제가 발생했습니다. 다시 시도해주세요.',
+          dedupeKey:
+              'error-hub-${event.envelope.source.name}-${event.envelope.error.runtimeType}',
+        );
   }
 
   /// app root MaterialApp을 렌더링한다.
@@ -248,24 +263,38 @@ class _BootstrapViewState extends ConsumerState<_BootstrapView> {
       builder: (context, authSession, _) {
         if (authSession is Pending) {
           return MaterialApp(
-            scaffoldMessengerKey: _scaffoldMessengerKey,
             title: appConfig.appTitle,
             debugShowCheckedModeBanner: appConfig.showDebugBanner,
             theme: appConfig.theme,
             home: const _BootstrapPendingView(),
+            builder: (context, child) => FeedbackHost(
+              navigatorKey: widget.rootNavigatorKey,
+              child: child ?? const SizedBox.shrink(),
+            ),
           );
         }
 
         return MaterialApp.router(
-          scaffoldMessengerKey: _scaffoldMessengerKey,
           title: appConfig.appTitle,
           debugShowCheckedModeBanner: appConfig.showDebugBanner,
           theme: appConfig.theme,
           routerConfig: widget.router,
+          builder: (context, child) => FeedbackHost(
+            navigatorKey: widget.rootNavigatorKey,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );
   }
+}
+
+String _sessionExpiredMessageFor(InvalidReason reason) {
+  return switch (reason) {
+    InvalidReason.missingAccount => '세션이 만료되었습니다. 다시 로그인해주세요.',
+    InvalidReason.blocked ||
+    InvalidReason.disabled => '현재 세션이 더 이상 유효하지 않습니다. 다시 로그인해주세요.',
+  };
 }
 
 /// auth session과 server state가 맞춰질 때까지 잠깐 보여주는 대기 화면.

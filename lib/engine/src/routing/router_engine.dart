@@ -32,6 +32,7 @@ class RouterEngine {
     required this.initialLocation,
     required this.shellConfig,
     required this.navigationNotifier,
+    this.navigatorKey,
     this.redirect,
     this.refreshListenable,
   });
@@ -43,6 +44,8 @@ class RouterEngine {
   final EngineShellConfig shellConfig;
 
   final NavigationStateNotifier navigationNotifier;
+
+  final GlobalKey<NavigatorState>? navigatorKey;
 
   final GoRouterRedirect? redirect;
 
@@ -76,6 +79,7 @@ class RouterEngine {
     );
 
     final router = GoRouter(
+      navigatorKey: navigatorKey,
       initialLocation: initialLocation,
       redirect: redirect,
       refreshListenable: refreshListenable,

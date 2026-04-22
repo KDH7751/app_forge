@@ -25,16 +25,5 @@ void main() {
       expect(presentation?.shouldReportToRootFeedback, isTrue);
       expect(presentation?.message, '네트워크 문제로 요청을 처리할 수 없습니다');
     });
-
-    test(
-      'root feedback text uses presenter without reinterpreting failure type',
-      () {
-        final message = AuthFailurePresenter.messageForRootFeedback(
-          AppFailure.unavailable,
-        );
-
-        expect(message, '현재 요청을 처리할 수 없습니다. 잠시 후 다시 시도해주세요');
-      },
-    );
   });
 }

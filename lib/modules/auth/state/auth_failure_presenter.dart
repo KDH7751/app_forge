@@ -50,14 +50,6 @@ final class AuthFailurePresenter {
     );
   }
 
-  /// root feedback channel이 auth feature failure를 문구로 읽을 때 사용한다.
-  ///
-  /// root는 전달된 failure를 표시만 할 뿐,
-  /// 이를 global/runtime error 계약으로 재해석하지 않는다.
-  static String? messageForRootFeedback(Object? failure) {
-    return _messageFor(failure);
-  }
-
   static AuthFailurePresentation? _present(
     Object? failure, {
     required Set<AppFailureType> localTypes,
@@ -72,14 +64,6 @@ final class AuthFailurePresenter {
           ? AuthFailurePresentationDisposition.localOnly
           : AuthFailurePresentationDisposition.rootFeedbackCandidate,
     );
-  }
-
-  static String? _messageFor(Object? failure) {
-    if (failure is! AppFailure) {
-      return null;
-    }
-
-    return _messageForAppFailure(failure);
   }
 
   static String _messageForAppFailure(AppFailure failure) {

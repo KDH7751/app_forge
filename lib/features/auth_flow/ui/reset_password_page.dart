@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
-
-import '../state/auth_flow_notice.dart';
 import '../state/reset_controller.dart';
 
 /// reusable auth module의 recovery 경로를 여는 auth_flow page.
@@ -33,10 +30,8 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           return;
         }
 
-        context.go(
-          '/login',
-          extra: const AuthFlowNotice.resetPasswordSuccess(),
-        );
+        ref.read(authFeedbackCoordinatorProvider).handleResetPasswordSuccess();
+        context.go('/login');
       },
     );
   }
@@ -51,6 +46,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(resetControllerProvider);
     final controller = ref.read(resetControllerProvider.notifier);
+    final feedbackCoordinator = ref.read(authFeedbackCoordinatorProvider);
     final emailPresentation = AuthFailurePresenter.presentForAuthFlow(
       state.emailFailure,
     );
@@ -90,21 +86,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                           if (result case Failure<void>(
                             failure: final failure,
                           )) {
-                            final presentation =
-                                AuthFailurePresenter.presentForAuthFlow(
-                                  failure,
-                                );
-
-                            if (presentation?.shouldReportToRootFeedback !=
-                                true) {
-                              return;
-                            }
-
-                            reportUiError(
-                              context,
-                              failure,
-                              domainError: failure,
-                            );
+                            feedbackCoordinator.handleAuthFlowFailure(failure);
                           }
                         }
                       : null,

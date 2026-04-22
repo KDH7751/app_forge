@@ -19,6 +19,7 @@ export 'domain/session/auth_session.dart';
 export 'domain/validation/auth_field_keys.dart';
 export 'domain/validation/auth_validation.dart';
 export 'state/auth_failure_presenter.dart';
+export 'state/auth_feedback_coordinator.dart';
 export 'state/controllers/change_password_controller.dart';
 export 'state/controllers/delete_account_controller.dart';
 export 'state/controllers/logout_controller.dart';

@@ -52,7 +52,7 @@
 - 2026-04-09: `deleteAccount` 실행 순서는 reauthenticate -> auth provider account delete -> `users/{uid}` delete 로 고정한다.
 - 2026-04-09: auth provider 계정 삭제 성공 후 `users/{uid}` 삭제 실패 시 같은 실행 흐름 안에서 최대 5회 cleanup 재시도한다.
 - 2026-04-09: delete cleanup 실패가 남아 있으면 success로 승격하지 않는다.
-- 2026-04-09: delete 확인 dialog는 profile UI에 두되 실제 action 실행 소유권은 auth에 둔다.
+- 2026-04-09: delete 확인 dialog는 현재 profile 소비 UI가 auth destructive confirm feedback request를 트리거하는 방식으로 열고, 실제 action 실행 소유권은 auth에 둔다.
 - 2026-04-09: changePassword 성공 시 controller state는 `isSuccess`를 유지하되 입력값과 field error를 함께 초기화한다.
 - 2026-04-09: auth_entry와 profile UI의 루트 알림 보고 분기는 feature-local helper로만 정리하고, 전역 notify 정책으로 승격하지 않는다.
 - 2026-04-09: 실제 계정 삭제 성공 의미는 계속 `auth provider delete + users/{uid} delete` 정의에만 있다.
@@ -138,3 +138,29 @@
 - 2026-04-20: auth action failure contract의 `unauthorized`와 Phase 3.5 session invalid public contract의 `InvalidReason.disabled`는 같은 raw provider 사실과 닿아도 서로 다른 계약으로 유지한다.
 - 2026-04-20: 같은 raw provider code라도 action context가 다르면 서로 다른 `AppFailureType`으로 정규화될 수 있으며, `user-not-found`는 login에서 `invalidCredentials`, reset에서 `notFound`로 유지한다.
 - 2026-04-20: global/runtime error 축(`ErrorHub`, `ErrorPolicy`, `ErrorDecision`)은 이번 단계에서 변경하지 않는다.
+
+## Phase 3.8 app-wide feedback system
+
+- 2026-04-21: app-wide user feedback system은 `snackbar`, `dialog`, `banner`, `modalSheet` 4개 공식 channel만 지원한다.
+- 2026-04-21: popup, full-screen notice channel은 추가하지 않는다.
+- 2026-04-21: 3.8 feedback system은 `modules/feedback` reusable module로 두고, 이번 phase 잠금 범위를 구현하기 위한 contract/provider/helper/root host까지만 포함한다.
+- 2026-04-21: bootstrap은 host/runtime wiring만 담당하며 app 설정 source of truth를 늘리거나 대체하지 않는다.
+- 2026-04-21: feature failure root notify 경로는 `ErrorHub -> root string mapper`가 아니라 `AuthFailurePresenter -> AuthFeedbackCoordinator -> feedback dispatch` 경로로 치환한다.
+- 2026-04-21: feature failure 해석 책임은 presenter/coordinator 쪽에 두고 feedback 중앙 계층은 표시 실행, queue, dedupe, priority, lifecycle만 담당한다.
+- 2026-04-21: `FeedbackRequest`는 `AppFailure`를 대체하지 않는다.
+- 2026-04-21: auth action failure request 조립과 dispatch orchestration은 `AuthFeedbackCoordinator`가 맡고, session invalid/forced logout 계열 root feedback dispatch는 bootstrap/runtime wiring에서 연결한다.
+- 2026-04-21: ErrorHub와 feedback은 root host 수준에서 표시 인프라 일부를 공유할 수 있어도 모델/정책/입력 경로는 분리 유지한다.
+- 2026-04-21: semantic preset 기본 목록은 `error`, `success`, `warning`, `info`, `confirm`, `destructiveConfirm`, `sessionExpired`로 고정한다.
+- 2026-04-21: 채널별 slot 공식 목록은 `snackbar(icon,title,message,action)`, `dialog(icon,title,body,actions,supplementary)`, `banner(icon,message,secondaryAction)`, `modalSheet(header,body,actions)`로 고정한다.
+- 2026-04-21: slot 값이 없으면 해당 영역은 렌더링하지 않고 placeholder나 죽은 spacing을 남기지 않는다.
+- 2026-04-21: override는 등록된 contract 안에서만 허용하고 자유 widget tree, 자유 render payload, animation 구현체 직접 주입은 허용하지 않는다.
+- 2026-04-21: dialog와 modalSheet는 blocking 계열로 보고 동시 1개만 활성화한다.
+- 2026-04-21: snackbar는 독립 채널이지만 blocking 계열이 떠 있으면 대기시킬 수 있고, banner는 동시 표시를 허용한다.
+- 2026-04-21: 같은 channel 내 active request는 기본 1개이며, 더 높은 priority의 blocking request는 낮은 priority blocking request를 대체할 수 있다.
+- 2026-04-21: 같은 `dedupeKey`를 가진 request가 active 상태거나 queue에 있으면 중복 생성하지 않는다.
+- 2026-04-21: action 실행 시 기본 동작은 dismiss이고 필요한 경우에만 등록된 contract 안에서 override를 허용한다.
+- 2026-04-21: `snackbar`와 `banner`는 custom root overlay presenter 경로로 표시하고, `dialog`와 `modalSheet`는 feedback host의 navigator/context 경로를 유지한다.
+- 2026-04-21: channel별 허용 범위를 벗어나는 `position`, `layoutMode`, `animation` 조합은 request 생성 단계에서 각 channel 기본값 또는 고정값으로 안전하게 정규화한다.
+- 2026-04-22: delete account confirm dialog는 auth feature의 destructive confirm feedback request로 보고, 현재 비밀번호 입력과 명시적 확인을 함께 소유할 수 있다.
+- 2026-04-22: delete confirm action 이후 실제 delete submit orchestration은 `AuthFeedbackCoordinator`가 담당할 수 있다.
+- 2026-04-22: delete confirm에서 나온 local-only failure는 root feedback으로 승격하지 않고 dialog/local 경로에 남긴다.

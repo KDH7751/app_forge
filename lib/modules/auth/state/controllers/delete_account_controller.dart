@@ -7,8 +7,8 @@ import '../providers/auth_facade_provider.dart';
 
 /// profile 소비 UI가 auth deleteAccount 실행을 여는 단일 진입 controller.
 ///
-/// dialog 바깥에서 실제 submit을 담당하며,
-/// currentPassword 입력과 field failure만 유지한다.
+/// destructive confirm dialog action이 현재 비밀번호를 넘기면
+/// 실제 delete submit을 수행하고 currentPassword 관련 field failure를 유지한다.
 /// 삭제 확인 UX가 바뀌면 profile delete 섹션과 함께 수정된다.
 final deleteAccountControllerProvider =
     AutoDisposeNotifierProvider<

@@ -33,6 +33,7 @@ feature 내부 비동기 실패와 validation 실패는 `Result<T>`와 `AppFailu
 - 같은 raw provider 사실이라도 action 맥락이 다르면 다른 `AppFailureType`으로 정규화될 수 있다.
 - feature-level failure 소비 기본 패턴은 feature별 failure presenter로 유지한다.
 - presenter는 정규화된 `AppFailure`만 받아 사용자 문구와 로컬 처리/공용 피드백 후보 판단을 만든다.
+- auth feature failure가 app root 공용 피드백 채널로 전달될 때는 `AuthFailurePresenter -> AuthFeedbackCoordinator -> feedback dispatch` 경로를 사용한다.
 - feature failure가 app root 공용 피드백 채널로 전달될 수 있어도 global/runtime error 모델로 승격하지 않는다.
 
 `AppFailureType` 공식 범위:
@@ -84,12 +85,16 @@ UI 규칙:
 - 전역 에러 UI는 `ErrorDecision.shouldNotify`만 기준으로 반응한다.
 - 전역 에러 listener는 app root에서 단 한 번만 등록한다.
 - feature 내부에서 전역 error stream을 직접 listen하지 않는다.
-- 실제 사용자 메시지 변환은 feature mapper 경로를 사용한다.
+- 전역 에러 notify 경로는 feature failure root feedback 경로와 분리한다.
 - feature UI의 local helper는 전역 `ErrorPolicy`를 대체하지 않는다.
 
 ## 3. 두 축의 경계
 
 - `AppFailure`는 feature-level failure 표현이다.
+- `FeedbackRequest`는 app-wide user feedback 표시 요청이다.
 - `ErrorEnvelope` / `ErrorDecision`은 app 전역/runtime error 처리 모델이다.
 - `domainError`는 optional metadata일 뿐, 두 축을 하나의 모델로 합치지 않는다.
 - `AppFailure`를 global error model로 승격하지 않는다.
+- `FeedbackRequest`를 `AppFailure` 대체 계약으로 취급하지 않는다.
+- root host 수준에서 snackbar/banner 같은 표시 인프라 일부를 공유할 수 있어도, ErrorHub와 feedback의 모델/정책/입력 경로는 분리 유지한다.
+- `snackbar`와 `banner`는 feedback overlay presenter를 통해 표시될 수 있어도 ErrorHub notify 경로와 feedback request 경로를 합치지 않는다.

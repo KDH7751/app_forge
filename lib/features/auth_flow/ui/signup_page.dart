@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
 
 import '../state/signup_controller.dart';
@@ -14,6 +13,7 @@ class SignupPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(signupControllerProvider);
     final controller = ref.read(signupControllerProvider.notifier);
+    final feedbackCoordinator = ref.read(authFeedbackCoordinatorProvider);
     final emailPresentation = AuthFailurePresenter.presentForAuthFlow(
       state.emailFailure,
     );
@@ -82,21 +82,7 @@ class SignupPage extends ConsumerWidget {
                           if (result case Failure<void>(
                             failure: final failure,
                           )) {
-                            final presentation =
-                                AuthFailurePresenter.presentForAuthFlow(
-                                  failure,
-                                );
-
-                            if (presentation?.shouldReportToRootFeedback !=
-                                true) {
-                              return;
-                            }
-
-                            reportUiError(
-                              context,
-                              failure,
-                              domainError: failure,
-                            );
+                            feedbackCoordinator.handleAuthFlowFailure(failure);
                           }
                         }
                       : null,

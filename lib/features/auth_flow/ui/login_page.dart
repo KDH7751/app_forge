@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../engine/engine.dart';
 import '../../../modules/auth/auth.dart';
-
-import '../state/auth_flow_notice.dart';
 import '../state/login_controller.dart';
 
 /// reusable auth module을 실제 프로젝트 sign-in UX로 여는 auth_flow 시작 page.
 class LoginPage extends ConsumerWidget {
-  const LoginPage({super.key, this.notice});
-
-  final AuthFlowNotice? notice;
+  const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(loginControllerProvider);
     final controller = ref.read(loginControllerProvider.notifier);
+    final feedbackCoordinator = ref.read(authFeedbackCoordinatorProvider);
     final emailPresentation = AuthFailurePresenter.presentForAuthFlow(
       state.emailFailure,
     );
@@ -41,14 +37,6 @@ class LoginPage extends ConsumerWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                if (notice?.kind ==
-                    AuthFlowNoticeKind.resetPasswordSuccess) ...<Widget>[
-                  const Text(
-                    '비밀번호 재설정 메일을 전송했습니다',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                ],
                 TextField(
                   enabled: !state.isLoading,
                   onChanged: controller.updateEmail,
@@ -85,21 +73,7 @@ class LoginPage extends ConsumerWidget {
                           if (result case Failure<void>(
                             failure: final failure,
                           )) {
-                            final presentation =
-                                AuthFailurePresenter.presentForAuthFlow(
-                                  failure,
-                                );
-
-                            if (presentation?.shouldReportToRootFeedback !=
-                                true) {
-                              return;
-                            }
-
-                            reportUiError(
-                              context,
-                              failure,
-                              domainError: failure,
-                            );
+                            feedbackCoordinator.handleAuthFlowFailure(failure);
                           }
                         }
                       : null,
