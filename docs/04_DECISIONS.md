@@ -1,13 +1,17 @@
 # Decisions
 
-## Phase 1 foundation
+## Phase 1 structure and public surface foundation
+
+Phase 1은 구조 경계와 public API 기준을 초기 고정한 단계다.
 
 - 2026-03-23: Engine은 policy, flow, abstraction을 소유하고 concrete 구현은 app이 주입한다.
 - 2026-03-23: app은 composition root다.
 - 2026-03-23: Feature는 `ui/state/data/domain`을 필요에 따라 가지는 vertical slice로 유지한다.
 - 2026-03-23: engine public surface는 `lib/engine/engine.dart` 하나로 유지한다.
 
-## Phase 2 routing foundation
+## Phase 2 routing, shell, and navigation foundation
+
+Phase 2는 routing engine과 shell/navigation 기반을 고정한 단계다.
 
 - 2026-03-26: `RouteDef`, `RouterEngine`, `NavigationState`, `EngineShell`, `FeatureShell`을 최소 범위로 도입한다.
 - 2026-03-26: route path source of truth는 top-level과 child 모두 절대경로로 유지한다.
@@ -31,7 +35,17 @@
 - 2026-03-27: app 설정 source of truth는 `app_config.dart`, `app_plugins.dart`, `app_features.dart` 3파일로 유지한다.
 - 2026-03-27: auth feature는 UI page를 소유하지 않고, login page는 별도 consumer feature가 auth를 소비한다.
 
+## Phase 3.1 auth entry and auth_flow baseline
+
+Phase 3.1은 public auth entry와 project-level auth consumer flow의 기초를 확보한 단계다.
+
+- 2026-03-31: login/signup/reset-password 진입 흐름은 auth module을 직접 구현하는 UI가 아니라 consumer feature가 auth 공개 표면을 소비하는 구조로 유지한다.
+- 2026-03-31: public auth entry route는 shell 밖에서 동작하도록 `useShell: false` 기준을 유지한다.
+- 2026-04-15: 현재 이름은 `auth_flow`이며, `auth_flow`는 auth module public surface를 소비하는 project-level consumer feature다.
+
 ## Phase 3.2 global error handling
+
+Phase 3.2는 ErrorHub 기반 global/runtime error 처리 축을 고정한 단계다.
 
 - 2026-04-03: ErrorHub를 도입하고 모든 에러를 ErrorEnvelope로 래핑한다.
 - 2026-04-03: ErrorPolicy는 ErrorEnvelope를 ErrorDecision으로 변환한다.
@@ -54,7 +68,7 @@
 - 2026-04-09: delete cleanup 실패가 남아 있으면 success로 승격하지 않는다.
 - 2026-04-09: delete 확인 dialog는 현재 profile 소비 UI가 auth destructive confirm feedback request를 트리거하는 방식으로 열고, 실제 action 실행 소유권은 auth에 둔다.
 - 2026-04-09: changePassword 성공 시 controller state는 `isSuccess`를 유지하되 입력값과 field error를 함께 초기화한다.
-- 2026-04-09: auth_entry와 profile UI의 루트 알림 보고 분기는 feature-local helper로만 정리하고, 전역 notify 정책으로 승격하지 않는다.
+- 2026-04-09: auth flow와 profile UI의 루트 알림 보고 분기는 feature-local helper로만 정리하고, 전역 notify 정책으로 승격하지 않는다.
 - 2026-04-09: 실제 계정 삭제 성공 의미는 계속 `auth provider delete + users/{uid} delete` 정의에만 있다.
 
 ## Phase 3.4 session integrity
@@ -95,6 +109,11 @@
 - 2026-04-09: profile/domain 성격 데이터와 internal polling/recovery 세부는 public `AuthSession` contract에 올리지 않는다.
 
 ## Phase 3.6 provider-set composition and structure lock
+
+Phase 3.6은 두 축으로 읽는다.
+
+- provider-set composition 고정
+- `modules/auth`, `modules/bootstrap`, `modules/foundation`, `features/auth_flow` 재배치
 
 - 2026-04-13: `/app`의 1차 provider 선택 축은 `auth`, `domain data`, `file/storage`, `analytics/crash`다.
 - 2026-04-13: `push/notification`은 범위에서 제외한다.
@@ -140,6 +159,8 @@
 - 2026-04-20: global/runtime error 축(`ErrorHub`, `ErrorPolicy`, `ErrorDecision`)은 이번 단계에서 변경하지 않는다.
 
 ## Phase 3.8 app-wide feedback system
+
+Phase 3.8은 현재 완료된 app-wide feedback system 단계다.
 
 - 2026-04-21: app-wide user feedback system은 `snackbar`, `dialog`, `banner`, `modalSheet` 4개 공식 channel만 지원한다.
 - 2026-04-21: popup, full-screen notice channel은 추가하지 않는다.
