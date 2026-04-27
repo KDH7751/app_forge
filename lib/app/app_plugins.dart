@@ -33,13 +33,13 @@ import '../modules/auth/auth.dart';
 ///
 /// bootstrap은 이 값을 auth 입력 provider로 전달하고,
 /// 하단 파생 구역은 이 값이 Firebase runtime을 요구하는지 함께 계산한다.
-final authProvider = AuthProviderSet.firebaseAuth;
+final AuthProviderSet authProvider = AuthProviderSet.firebaseAuth;
 
 /// 선택된 auth provider set이 동작하는 데 필요한 최소 config.
 ///
 /// 사용자가 직접 auth 조립 입력을 바꾸는 위치는 여기까지이며,
 /// action wiring 세부나 endpoint 수준 설정은 이 파일에 두지 않는다.
-final authConfig = const FirebaseAuthConfig();
+final AuthConfig authConfig = const FirebaseAuthConfig();
 
 /// domain data 영역은 auth와 분리된 별도 provider 축이다.
 ///
@@ -175,6 +175,7 @@ class ConsoleLogger implements Logger {
 bool _authProviderRequiresFirebaseRuntime(AuthProviderSet provider) {
   return switch (provider) {
     AuthProviderSet.firebaseAuth => true,
+    AuthProviderSet.apiTestHarness => false,
   };
 }
 

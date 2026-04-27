@@ -20,7 +20,6 @@ import '../../data/datasources/users_document_datasource.dart';
 import '../../domain/session/auth_session.dart';
 import 'auth_assembly_provider.dart';
 import 'auth_recovery_provider.dart';
-import 'auth_runtime_provider.dart';
 import 'auth_session_models.dart';
 
 /// 선택된 provider set이 제공하는 raw authenticated session stream.
@@ -56,7 +55,7 @@ final authObservationStreamProvider = Provider<Stream<AuthSessionObservation>>((
   ref,
 ) {
   final authSessions = ref.watch(authSessionStreamProvider);
-  final usersDataSource = ref.watch(usersDocumentDataSourceProvider);
+  final watchUserServerState = ref.watch(authUserServerStateWatcherProvider);
   final watchAuthProviderInvalidation = ref.watch(
     authInvalidationWatcherProvider,
   );
@@ -64,11 +63,19 @@ final authObservationStreamProvider = Provider<Stream<AuthSessionObservation>>((
 
   return _watchAuthSessionObservation(
     authSessions: authSessions,
-    usersDataSource: usersDataSource,
+    watchUserServerState: watchUserServerState,
     watchAuthProviderInvalidation: watchAuthProviderInvalidation,
     recoveryInFlightCount: recoveryInFlightCount,
   );
 });
+
+/// Selected provider set account-state watcher.
+final authUserServerStateWatcherProvider =
+    Provider<Stream<UserDocumentServerState> Function(String uid)>((ref) {
+      final assembly = ref.watch(authAssemblyProvider);
+
+      return (uid) => assembly.watchUserServerState(uid: uid);
+    });
 
 /// bootstrap과 테스트가 내부 관찰 상태를 읽을 때 사용하는 provider.
 final authObservationProvider = StreamProvider<AuthSessionObservation>((ref) {
@@ -89,7 +96,8 @@ final authSessionProvider = Provider<AuthSession>((ref) {
 
 Stream<AuthSessionObservation> _watchAuthSessionObservation({
   required Stream<Authenticated?> authSessions,
-  required UsersDocumentDataSource usersDataSource,
+  required Stream<UserDocumentServerState> Function(String uid)
+  watchUserServerState,
   required AuthProviderInvalidationWatcher watchAuthProviderInvalidation,
   required StateController<int> recoveryInFlightCount,
 }) {
@@ -145,28 +153,28 @@ Stream<AuthSessionObservation> _watchAuthSessionObservation({
         userReady = false;
         providerReady = false;
         emitObservation();
-        userStateSubscription = usersDataSource
-            .watchUserServerState(uid: session.uid)
-            .listen((userState) {
-              final nextInvalidation = _resolveUserDocumentInvalidation(
-                session: session,
-                userState: userState,
-              );
-              final recovering = recoveryInFlightCount.mounted
-                  ? recoveryInFlightCount.state > 0
-                  : false;
+        userStateSubscription = watchUserServerState(session.uid).listen((
+          userState,
+        ) {
+          final nextInvalidation = _resolveUserDocumentInvalidation(
+            session: session,
+            userState: userState,
+          );
+          final recovering = recoveryInFlightCount.mounted
+              ? recoveryInFlightCount.state > 0
+              : false;
 
-              final shouldHoldForRecovery =
-                  recovering &&
-                  nextInvalidation?.reason ==
-                      AuthSessionInvalidationReason.missingUserDocument;
+          final shouldHoldForRecovery =
+              recovering &&
+              nextInvalidation?.reason ==
+                  AuthSessionInvalidationReason.missingUserDocument;
 
-              userReady = !shouldHoldForRecovery;
-              userDocumentInvalidation = shouldHoldForRecovery
-                  ? null
-                  : nextInvalidation;
-              emitObservation();
-            });
+          userReady = !shouldHoldForRecovery;
+          userDocumentInvalidation = shouldHoldForRecovery
+              ? null
+              : nextInvalidation;
+          emitObservation();
+        });
         authProviderInvalidationSubscription =
             watchAuthProviderInvalidation(session.uid).listen((invalidation) {
               providerReady = true;

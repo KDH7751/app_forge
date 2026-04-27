@@ -185,3 +185,21 @@ Phase 3.8은 현재 완료된 app-wide feedback system 단계다.
 - 2026-04-22: delete account confirm dialog는 auth feature의 destructive confirm feedback request로 보고, 현재 비밀번호 입력과 명시적 확인을 함께 소유할 수 있다.
 - 2026-04-22: delete confirm action 이후 실제 delete submit orchestration은 `AuthFeedbackCoordinator`가 담당할 수 있다.
 - 2026-04-22: delete confirm에서 나온 local-only failure는 root feedback으로 승격하지 않고 dialog/local 경로에 남긴다.
+
+## Phase 3.6 follow-up API-style auth provider portability validation
+
+Phase 3.6 후속 작업은 운영 API 서버 구현이 아니라 Phase 3.6 provider-set composition이
+Firebase가 아닌 API-style provider 경로에서도 교체 가능하게 동작하는지 검증한 단계다.
+
+- 2026-04-27: auth provider set 선택은 계속 `app_plugins.dart`의 `authProvider`와 `authConfig`에서 시작한다.
+- 2026-04-27: API-style auth provider set은 `ApiAuthClient` contract만 소비하며, in-memory API harness server의 map/state를 직접 참조하지 않는다.
+- 2026-04-27: Phase 3.6 후속 작업의 `InMemoryApiAuthClient`는 검증용 구현체이며, 향후 `HttpApiAuthClient` 같은 실제 HTTP client가 같은 `ApiAuthClient` contract 뒤에 연결되는 구조로 둔다.
+- 2026-04-27: in-memory API harness는 `status`, `body`, `code`가 있는 API-style response를 제공하고, auth data/provider boundary가 이를 `Result<T>`, `AppFailure`, `AuthSession`으로 정규화한다.
+- 2026-04-27: API raw status/code/body와 access token은 controller, UI, public session contract로 올리지 않는다.
+- 2026-04-27: API 경로에서도 `AuthSession` public contract는 `Authenticated(uid,email)`, `Unauthenticated`, `Invalid(reason)`, `Pending`만 유지한다.
+- 2026-04-27: API 경로에서도 `AppFailureType` 공식 범위는 확장하지 않고 기존 타입으로 정규화한다.
+- 2026-04-27: blocked/disabled/missing account는 API account-state response에서 기존 internal invalidation fact로 수렴한 뒤 public `InvalidReason`으로 매핑한다.
+- 2026-04-27: `changePassword`와 `deleteAccount`도 API test harness provider set에서 지원하며, delete 성공 의미는 auth provider account delete와 users-equivalent delete가 모두 성공한 경우로 유지한다.
+- 2026-04-27: auth_flow 로그인 화면은 선택된 provider label을 표시할 수 있지만, Firebase/API concrete 구현을 import하거나 type check하지 않는다.
+- 2026-04-27: app이 알아야 하는 입력은 provider 선택, provider set 최소 config, 검증용 label 후보까지로 제한하고 endpoint, parser, status mapping, concrete action/client/server state는 auth module 내부 concrete로 남긴다.
+- 2026-04-27: Phase 3.6 후속 작업 검증 결과 `flutter analyze`와 `flutter test`가 통과했다.

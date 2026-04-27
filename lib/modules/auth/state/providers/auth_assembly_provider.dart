@@ -9,6 +9,7 @@ import '../../data/actions/firebase_login_action.dart';
 import '../../data/actions/firebase_logout_action.dart';
 import '../../data/actions/firebase_reset_password_action.dart';
 import '../../data/actions/firebase_signup_action.dart';
+import '../../data/api/api_auth_provider_set.dart';
 import '../../data/datasources/users_document_datasource.dart';
 import '../../data/factories/auth_runtime_factory.dart';
 import '../../domain/actions/change_password_action.dart';
@@ -40,6 +41,8 @@ abstract interface class AuthSetAssembly {
   LogoutAction get logoutAction;
 
   Stream<Authenticated?> watchSessions();
+
+  Stream<UserDocumentServerState> watchUserServerState({required String uid});
 
   AuthProviderInvalidationWatcher createInvalidationWatcher({
     required Duration probeInterval,
@@ -117,6 +120,11 @@ class FirebaseAuthAssembly implements AuthSetAssembly {
   }
 
   @override
+  Stream<UserDocumentServerState> watchUserServerState({required String uid}) {
+    return _usersDataSource.watchUserServerState(uid: uid);
+  }
+
+  @override
   AuthProviderInvalidationWatcher createInvalidationWatcher({
     required Duration probeInterval,
   }) {
@@ -149,6 +157,20 @@ final authAssemblyProvider = Provider<AuthSetAssembly>((ref) {
         config: config,
         firebaseAuth: ref.watch(firebaseAuthProvider),
         usersDataSource: ref.watch(usersDocumentDataSourceProvider),
+        logger: ref.watch(authLoggerProvider),
+      );
+    case AuthProviderSet.apiTestHarness:
+      final config = setup.config;
+
+      if (config is! ApiTestHarnessAuthConfig) {
+        throw StateError(
+          'Auth provider `${setup.provider.name}` requires '
+          'ApiTestHarnessAuthConfig.',
+        );
+      }
+
+      return ApiAuthAssembly(
+        client: ref.watch(apiAuthClientProvider),
         logger: ref.watch(authLoggerProvider),
       );
   }

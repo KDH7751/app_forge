@@ -10,7 +10,6 @@ import '../lib/app/app_config.dart';
 import '../lib/engine/engine.dart';
 import '../lib/modules/auth/auth.dart';
 import '../lib/modules/auth/data/datasources/users_document_datasource.dart';
-import '../lib/modules/auth/state/providers/auth_runtime_provider.dart';
 import '../lib/modules/bootstrap/bootstrap.dart';
 
 /// router shell / auth_flow 흐름 검증용 widget test 묶음.
@@ -977,8 +976,16 @@ ProviderContainer _buildAuthContainer({
   return ProviderContainer(
     overrides: <Override>[
       authSessionStreamProvider.overrideWithValue(sessionSource.stream),
-      usersDocumentDataSourceProvider.overrideWithValue(
-        _FakeUsersDocumentDataSource(userStateSource),
+      authUserServerStateWatcherProvider.overrideWithValue(
+        (uid) =>
+            userStateSource?.stream ??
+            Stream<UserDocumentServerState>.value(
+              const UserDocumentServerState(
+                exists: true,
+                isBlocked: false,
+                isDisabled: false,
+              ),
+            ),
       ),
       authInvalidationWatcherProvider.overrideWithValue(
         (uid) =>
@@ -1003,8 +1010,16 @@ Bootstrap _buildBootstrapWithUserState(
     overrides: <Override>[
       authFacadeProvider.overrideWithValue(repository),
       authSessionStreamProvider.overrideWithValue(sessionSource.stream),
-      usersDocumentDataSourceProvider.overrideWithValue(
-        _FakeUsersDocumentDataSource(userStateSource),
+      authUserServerStateWatcherProvider.overrideWithValue(
+        (uid) =>
+            userStateSource?.stream ??
+            Stream<UserDocumentServerState>.value(
+              const UserDocumentServerState(
+                exists: true,
+                isBlocked: false,
+                isDisabled: false,
+              ),
+            ),
       ),
       authInvalidationWatcherProvider.overrideWithValue(
         (uid) =>
@@ -1065,24 +1080,6 @@ class _FakeUserDocumentStateSource {
 
   Future<void> dispose() async {
     await _controller.close();
-  }
-}
-
-class _FakeUsersDocumentDataSource extends UsersDocumentDataSource {
-  _FakeUsersDocumentDataSource(this._source) : super();
-
-  final _FakeUserDocumentStateSource? _source;
-
-  @override
-  Stream<UserDocumentServerState> watchUserServerState({required String uid}) {
-    return _source?.stream ??
-        Stream<UserDocumentServerState>.value(
-          const UserDocumentServerState(
-            exists: true,
-            isBlocked: false,
-            isDisabled: false,
-          ),
-        );
   }
 }
 

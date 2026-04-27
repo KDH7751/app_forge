@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// app이 auth 영역에 대해 고를 수 있는 provider set 식별자.
 ///
 /// auth assembly는 이 enum을 기준으로 concrete action/session 조립 방향을 정한다.
-enum AuthProviderSet { firebaseAuth }
+enum AuthProviderSet { firebaseAuth, apiTestHarness }
 
 /// auth provider set이 기본적으로 제공할 수 있는 capability 집합.
 ///
@@ -29,7 +29,26 @@ sealed class AuthConfig {
 /// 현재는 선택만으로 충분해 비어 있지만,
 /// app이 auth set 전체에 넘길 최소 설정 경계를 보여주기 위해 타입을 유지한다.
 class FirebaseAuthConfig extends AuthConfig {
-  const FirebaseAuthConfig();
+  const FirebaseAuthConfig({this.providerLabel = 'Firebase'});
+
+  final String providerLabel;
+}
+
+/// API-style auth provider set test harness config.
+///
+/// This is intentionally minimal for the Phase 3.6 follow-up. Endpoint, parser,
+/// status mapping, and concrete client wiring stay inside the auth module.
+class ApiTestHarnessAuthConfig extends AuthConfig {
+  const ApiTestHarnessAuthConfig({this.providerLabel = 'API test harness'});
+
+  final String providerLabel;
+}
+
+/// Debug/verification metadata for the selected auth provider.
+class AuthProviderMetadata {
+  const AuthProviderMetadata({required this.label});
+
+  final String label;
 }
 
 /// app이 provider set 위에 덮는 최종 활성화 정책.
@@ -75,3 +94,29 @@ final authSetupProvider = Provider<AuthSetup>((ref) {
     policy: AuthActivationPolicy(),
   );
 });
+
+/// Metadata for UI/debug verification of the selected auth provider.
+///
+/// This value is display-only and must not drive redirect, session, or failure
+/// decisions.
+final authProviderMetadataProvider = Provider<AuthProviderMetadata>((ref) {
+  final setup = ref.watch(authSetupProvider);
+
+  return AuthProviderMetadata(label: _providerLabel(setup));
+});
+
+String _providerLabel(AuthSetup setup) {
+  final config = setup.config;
+
+  return switch ((setup.provider, config)) {
+    (AuthProviderSet.firebaseAuth, FirebaseAuthConfig(:final providerLabel)) =>
+      providerLabel,
+    (
+      AuthProviderSet.apiTestHarness,
+      ApiTestHarnessAuthConfig(:final providerLabel),
+    ) =>
+      providerLabel,
+    (AuthProviderSet.firebaseAuth, _) => 'Firebase',
+    (AuthProviderSet.apiTestHarness, _) => 'API test harness',
+  };
+}

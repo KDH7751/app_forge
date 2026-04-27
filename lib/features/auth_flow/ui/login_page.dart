@@ -13,6 +13,7 @@ class LoginPage extends ConsumerWidget {
     final state = ref.watch(loginControllerProvider);
     final controller = ref.read(loginControllerProvider.notifier);
     final feedbackCoordinator = ref.read(authFeedbackCoordinatorProvider);
+    final providerMetadata = ref.watch(authProviderMetadataProvider);
     final emailPresentation = AuthFailurePresenter.presentForAuthFlow(
       state.emailFailure,
     );
@@ -35,6 +36,12 @@ class LoginPage extends ConsumerWidget {
                 const Text(
                   'Project auth flow that consumes the reusable auth module outside the Engine shell.',
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Auth provider: ${providerMetadata.label}',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 24),
                 TextField(

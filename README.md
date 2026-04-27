@@ -7,7 +7,7 @@
 
 ## 현재 상태
 
-현재 Phase 3.8까지 완료되었다.
+현재 Phase 3.6 후속 작업까지 완료되었다.
 
 구현된 범위:
 
@@ -25,6 +25,11 @@
 - session invalid -> root sessionExpired banner 연결
 - ErrorHub / ErrorPolicy / ErrorDecision 기반 전역 에러 처리
 - runZonedGuarded 기반 runtime bootstrap
+- Firebase auth provider set 유지
+- API-style auth provider set 교체 검증
+- `ApiAuthClient` boundary 기반 auth action/session/failure 정규화
+- Phase 3.6 후속 작업 검증용 in-memory API harness
+- 로그인 화면 auth provider label 표시
 
 검증 상태:
 
@@ -57,6 +62,10 @@ lib/
 - auth의 공식 root feedback 소비 패턴은 `AuthFailurePresenter -> AuthFeedbackCoordinator -> feedback dispatch`다.
 - `snackbar`와 `banner`는 root overlay presenter 경로로 표시되고, `dialog`와 `modalSheet`는 feedback host의 navigator/context 경로를 유지한다.
 - `FeedbackRequest`는 `AppFailure`를 대체하지 않으며, ErrorHub와 feedback은 모델/정책/입력 경로를 분리 유지한다.
+- auth provider set은 `app_plugins.dart`의 `authProvider` / `authConfig`에서
+  Firebase와 API test harness를 교체할 수 있다.
+- API test harness는 운영 API가 아니라 provider-set portability 검증용이며,
+  실제 HTTP client는 같은 `ApiAuthClient` contract 뒤에 연결하는 후보로 남긴다.
 
 ## 문서 읽기 순서
 
